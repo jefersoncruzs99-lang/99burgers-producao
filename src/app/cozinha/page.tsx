@@ -71,6 +71,10 @@ export default async function Cozinha({
         </div>
       )}
 
+      <Link href="/cozinha/contagem" className="botao grande cheio">
+        📦 Contagem de estoque da semana
+      </Link>
+
       {comPessoas.length === 0 && (
         <div className="aviso">Nenhum colaborador cadastrado ainda. Peça para a líder cadastrar a equipe.</div>
       )}

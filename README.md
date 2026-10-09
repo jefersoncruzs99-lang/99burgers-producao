@@ -21,6 +21,8 @@ Usa o **mesmo projeto Supabase do painel**. Todas as tabelas deste app têm o pr
 | `prod_tarefas` | Cada execução, por pessoa e data (histórico preservado) |
 | `prod_evidencias` | Fotos de comprovação |
 | `prod_config` | Código do tablet (só o hash) |
+| `prod_metas_estoque` | Meta de estoque por produto (semanal/quinzenal), dia de produzir e responsável |
+| `prod_contagens` / `prod_contagem_itens` | Contagem semanal; ao confirmar gera as tarefas com meta − estoque |
 
 Migrações em `supabase/migrations/`. Todas já estão aplicadas no projeto do painel.
 
@@ -52,3 +54,4 @@ npm run typecheck && npm test && npm run build
 3. **Tarefas recorrentes**: o que se repete (ex.: "Feijão 3 kg" diária; "Limpar geladeira" semanal com foto).
 4. **Quadro do dia**: confira, troque responsáveis e crie tarefas avulsas.
 5. **Aprovações**: veja as fotos e aprove ou devolva para refazer.
+6. **Metas de estoque**: para geleias, molhos etc. Toda segunda alguém faz a contagem no tablet (📦 Contagem de estoque); ao confirmar, o responsável recebe "Produzir X: meta − estoque" no dia de produção, com a ficha técnica já multiplicada.

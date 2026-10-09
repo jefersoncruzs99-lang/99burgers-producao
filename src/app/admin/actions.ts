@@ -12,7 +12,9 @@ import {
   textoOuNulo,
   uuidOuNulo,
 } from "@/lib/form";
-import { hojeISO } from "@/lib/datas";
+import { hojeISO, segundaDaSemana, somarDias } from "@/lib/datas";
+import { itensDoFormulario } from "@/lib/estoque";
+import type { EstadoContagem } from "@/components/FormContagem";
 
 /** Executa a ação; em caso de erro volta para a página com a mensagem. */
 async function executar(caminho: string, fn: () => Promise<void>, sucesso?: string) {
@@ -361,4 +363,69 @@ export async function definirCodigoCozinha(fd: FormData) {
     const { error } = await supabase.rpc("prod_definir_codigo", { p_codigo: codigo });
     falhou(error);
   }, "Código da cozinha atualizado. Digite o novo código no tablet.");
+}
+
+// ===================== METAS DE ESTOQUE E CONTAGEM =====================
+
+export async function salvarMeta(fd: FormData) {
+  const id = uuidOuNulo(fd, "id");
+  await executar("/admin/metas", async () => {
+    const { supabase } = await exigirGestor();
+    const meta = numeroOuNulo(fd, "meta", "Meta");
+    if (!meta || meta <= 0) throw new Error("Informe a meta (maior que zero).");
+    const ciclo = texto(fd, "ciclo");
+    if (!["semanal", "quinzenal"].includes(ciclo)) throw new Error("Escolha semanal ou quinzenal.");
+    const dia = inteiroOuNulo(fd, "dia_producao", "Dia") ?? 1;
+    if (dia < 1 || dia > 7) throw new Error("Dia de produção inválido.");
+    const segunda = segundaDaSemana(hojeISO());
+    const dados: Record<string, unknown> = {
+      produto_id: exigir(uuidOuNulo(fd, "produto_id") ?? "", "Produto"),
+      meta,
+      ciclo,
+      dia_producao: dia,
+      responsavel_id: uuidOuNulo(fd, "responsavel_id"),
+      duracao_estimada_min: inteiroOuNulo(fd, "duracao_estimada_min", "Duração"),
+      ordem: inteiroOuNulo(fd, "ordem", "Ordem") ?? 100,
+    };
+    const quando = texto(fd, "quinzena");
+    if (ciclo === "quinzenal" && (quando === "esta" || quando === "proxima")) {
+      dados.semana_base = quando === "esta" ? segunda : somarDias(segunda, 7);
+    }
+    const { error } = id
+      ? await supabase.from("prod_metas_estoque").update(dados).eq("id", id)
+      : await supabase.from("prod_metas_estoque").insert(dados);
+    falhou(error);
+  }, "Meta salva.");
+}
+
+export async function alternarMeta(fd: FormData) {
+  await executar("/admin/metas", async () => {
+    const { supabase } = await exigirGestor();
+    const { error } = await supabase
+      .from("prod_metas_estoque")
+      .update({ ativo: texto(fd, "ativo") !== "true" })
+      .eq("id", exigir(uuidOuNulo(fd, "id") ?? "", "Meta"));
+    falhou(error);
+  });
+}
+
+export async function salvarContagemAdmin(_: EstadoContagem, fd: FormData): Promise<EstadoContagem> {
+  try {
+    const { supabase } = await exigirGestor();
+    const confirmar = texto(fd, "confirmar") === "sim";
+    const { data, error } = await supabase.rpc("prod_salvar_contagem", {
+      p_itens: itensDoFormulario(fd),
+      p_confirmar: confirmar,
+    });
+    if (error) return { erro: traduzirErro(error.message) };
+    revalidatePath("/admin", "layout");
+    return {
+      ok: confirmar
+        ? `Contagem confirmada. ${(data as { tarefas_ajustadas?: number })?.tarefas_ajustadas ?? 0} tarefa(s) de produção criadas ou ajustadas.`
+        : "Contagem salva. Termine e confirme depois.",
+    };
+  } catch (e) {
+    unstable_rethrow(e);
+    return { erro: e instanceof Error ? e.message : "Erro ao salvar a contagem." };
+  }
 }

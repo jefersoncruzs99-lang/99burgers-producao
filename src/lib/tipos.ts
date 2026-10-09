@@ -113,6 +113,39 @@ export interface EquipeCozinha {
   colaboradores: { id: string; nome: string; pendentes: number }[];
 }
 
+export interface MetaEstoque {
+  id: string;
+  produto_id: string;
+  meta: number;
+  ciclo: "semanal" | "quinzenal";
+  dia_producao: number;
+  semana_base: string;
+  responsavel_id: string | null;
+  duracao_estimada_min: number | null;
+  ordem: number;
+  ativo: boolean;
+}
+
+export interface ItemContagem {
+  produto_id: string;
+  produto: string;
+  unidade: string;
+  meta: number;
+  ciclo: "semanal" | "quinzenal";
+  produz_semana: boolean;
+  quantidade: number | null;
+  a_produzir: number | null;
+  setor: string | null;
+}
+
+export interface ContagemSemana {
+  semana: string;
+  status: "nova" | "rascunho" | "confirmada";
+  confirmada_em: string | null;
+  contado_por: string | null;
+  itens: ItemContagem[];
+}
+
 export interface FichaCozinha {
   produto: string;
   versao: number;

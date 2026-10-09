@@ -6,6 +6,8 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import { criarSupabaseServidor } from "@/lib/supabase/server";
 import { COOKIE_COZINHA, rpcCozinha } from "@/lib/cozinha";
 import { numeroOuNulo, texto, textoOuNulo, uuidOuNulo } from "@/lib/form";
+import { itensDoFormulario } from "@/lib/estoque";
+import type { EstadoContagem } from "@/components/FormContagem";
 
 export type EstadoCodigo = { erro?: string };
 
@@ -66,5 +68,28 @@ export async function concluirTarefa(_: EstadoTarefa, fd: FormData): Promise<Est
     unstable_rethrow(e);
     if (e instanceof Error && e.message === "SEM_CODIGO") redirect("/cozinha");
     return { erro: e instanceof Error ? e.message : "Não foi possível concluir." };
+  }
+}
+
+export async function salvarContagemCozinha(_: EstadoContagem, fd: FormData): Promise<EstadoContagem> {
+  try {
+    const colaborador = uuidOuNulo(fd, "colaborador_id");
+    if (!colaborador) return { erro: "Escolha quem está fazendo a contagem." };
+    const confirmar = texto(fd, "confirmar") === "sim";
+    const r = await rpcCozinha<{ tarefas_ajustadas?: number }>("prod_cozinha_salvar_contagem", {
+      p_colaborador: colaborador,
+      p_itens: itensDoFormulario(fd),
+      p_confirmar: confirmar,
+    });
+    revalidatePath("/cozinha", "layout");
+    return {
+      ok: confirmar
+        ? `Contagem confirmada! ${r?.tarefas_ajustadas ?? 0} tarefa(s) de produção atualizadas para a equipe.`
+        : "Contagem salva. Você pode terminar depois.",
+    };
+  } catch (e) {
+    unstable_rethrow(e);
+    if (e instanceof Error && e.message === "SEM_CODIGO") redirect("/cozinha");
+    return { erro: e instanceof Error ? e.message : "Não foi possível salvar a contagem." };
   }
 }
