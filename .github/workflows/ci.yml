@@ -19,8 +19,13 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund
       - name: Testes
-        run: npm test
+        run: npm test 2>&1 | tee verif.log; exit ${PIPESTATUS[0]}
       - name: Build (inclui checagem de tipos)
-        run: npm run build
+        run: npm run build 2>&1 | tee -a verif.log; exit ${PIPESTATUS[0]}
       - name: TypeScript estrito
-        run: npm run typecheck
+        run: npm run typecheck 2>&1 | tee -a verif.log; exit ${PIPESTATUS[0]}
+      - name: Resumo do erro
+        if: failure()
+        run: |
+          tail -n 60 verif.log | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > resumo.txt
+          echo "::error title=Falha na verificação::$(cat resumo.txt)"
