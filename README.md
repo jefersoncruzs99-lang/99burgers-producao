@@ -22,7 +22,7 @@ Usa o **mesmo projeto Supabase do painel**. Todas as tabelas deste app têm o pr
 | `prod_evidencias` | Fotos de comprovação |
 | `prod_config` | Código do tablet (só o hash) |
 
-Migrações em `supabase/migrations/`. As três primeiras já estão aplicadas; a `..._recorrencia_e_tablet.sql` precisa estar aplicada para o app funcionar.
+Migrações em `supabase/migrations/`. Todas já estão aplicadas no projeto do painel.
 
 ### Segurança
 - RLS ligado em todas as tabelas. Usuários logados do painel (perfis `admin`/`operator`) administram; a área `/admin` também confere o perfil no servidor.

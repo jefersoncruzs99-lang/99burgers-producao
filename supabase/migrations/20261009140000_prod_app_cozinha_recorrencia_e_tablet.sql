@@ -1,3 +1,4 @@
+-- JÁ APLICADA no Supabase em 2026-10-09 (em duas partes: prod_app_cozinha_recorrencia_regras e prod_app_cozinha_fotos).
 -- Recorrência das tarefas, regras de integridade, acesso do tablet por código e fotos.
 
 create extension if not exists pgcrypto with schema extensions;
