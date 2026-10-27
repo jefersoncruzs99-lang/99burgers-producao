@@ -177,6 +177,8 @@ export interface EtiquetaItem {
 }
 
 export interface EtiquetaItemAdmin extends EtiquetaItem {
+  temperatura_congelado: string;
+  temperatura_ambiente: string;
   base: string | null;
   ordem: number;
   ativo: boolean;

@@ -15,6 +15,14 @@ import { MODOS_IMPRESSAO, imprimirEtiqueta, lerModo, salvarModo, type ModoImpres
 import type { Conservacao, EtiquetaEmitida, EtiquetaItem } from "@/lib/tipos";
 import { emitirEtiqueta } from "@/app/cozinha/actions";
 
+/** Grupo que abre primeiro para cada setor (a pessoa pode trocar). */
+const GRUPO_DO_SETOR: Record<string, string> = {
+  Hamburgueria: "Produção 99",
+  Marmitaria: "Produção Marmita",
+  Operação: "Operação 99",
+  Salão: "Operação 99",
+};
+
 type Props = {
   colaboradorId: string;
   setor: string;
@@ -27,7 +35,7 @@ type Props = {
 export function EmissorEtiquetas({ colaboradorId, setor, itens, recentes, produtoInicial, tarefaId }: Props) {
   const inicial = produtoInicial ? (itens.find((i) => i.produto_id === produtoInicial) ?? null) : null;
   const [busca, setBusca] = useState("");
-  const [grupo, setGrupo] = useState<string | null>(inicial ? null : setor);
+  const [grupo, setGrupo] = useState<string | null>(inicial ? null : (GRUPO_DO_SETOR[setor] ?? setor));
   const [item, setItem] = useState<EtiquetaItem | null>(inicial);
   const [modo, setModo] = useState<ModoImpressao>("rawbt-tspl");
   const [mostrarConfig, setMostrarConfig] = useState(false);
