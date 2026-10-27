@@ -13,7 +13,7 @@ import {
 } from "@/lib/etiqueta";
 import { MODOS_IMPRESSAO, imprimirEtiqueta, lerModo, salvarModo, type ModoImpressao } from "@/lib/etiqueta-desenho";
 import type { Conservacao, EtiquetaEmitida, EtiquetaItem } from "@/lib/tipos";
-import { emitirEtiqueta } from "../../actions";
+import { emitirEtiqueta } from "@/app/cozinha/actions";
 
 type Props = {
   colaboradorId: string;
@@ -29,7 +29,7 @@ export function EmissorEtiquetas({ colaboradorId, setor, itens, recentes, produt
   const [busca, setBusca] = useState("");
   const [grupo, setGrupo] = useState<string | null>(inicial ? null : setor);
   const [item, setItem] = useState<EtiquetaItem | null>(inicial);
-  const [modo, setModo] = useState<ModoImpressao>("rawbt-pdf");
+  const [modo, setModo] = useState<ModoImpressao>("rawbt-tspl");
   const [mostrarConfig, setMostrarConfig] = useState(false);
   const [historico, setHistorico] = useState<EtiquetaEmitida[]>(recentes);
 

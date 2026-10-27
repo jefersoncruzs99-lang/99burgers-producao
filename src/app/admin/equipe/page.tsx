@@ -35,8 +35,18 @@ export default async function Equipe({ searchParams }: { searchParams: ParamsPag
               </option>
             ))}
           </select>
+          <label className="check">
+            <input type="checkbox" name="usa_tarefas" defaultChecked /> Tarefas
+          </label>
+          <label className="check">
+            <input type="checkbox" name="usa_etiquetas" defaultChecked /> Etiquetas
+          </label>
           <button className="botao primario">Adicionar</button>
         </form>
+        <p className="muted pequeno">
+          <strong>Tarefas</strong>: aparece no quadro e no tablet da produção. <strong>Etiquetas</strong>: pode imprimir
+          etiquetas de validade (salão e operação normalmente só etiquetas).
+        </p>
         <div className="tabela-rolagem">
           <table>
             <thead>
@@ -60,6 +70,12 @@ export default async function Equipe({ searchParams }: { searchParams: ParamsPag
                           </option>
                         ))}
                       </select>
+                      <label className="check" title="Aparece nas tarefas da produção">
+                        <input type="checkbox" name="usa_tarefas" defaultChecked={col.usa_tarefas} /> Tarefas
+                      </label>
+                      <label className="check" title="Pode imprimir etiquetas">
+                        <input type="checkbox" name="usa_etiquetas" defaultChecked={col.usa_etiquetas} /> Etiquetas
+                      </label>
                       <button className="botao">Salvar</button>
                     </form>
                   </td>

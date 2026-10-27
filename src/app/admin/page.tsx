@@ -36,7 +36,7 @@ export default async function QuadroDoDia({ searchParams }: { searchParams: Para
 
   const setores = (setoresR.data ?? []) as Setor[];
   const colaboradores = (colabsR.data ?? []) as Colaborador[];
-  const ativos = colaboradores.filter((c) => c.ativo);
+  const ativos = colaboradores.filter((c) => c.ativo && c.usa_tarefas);
   const produtos = (produtosR.data ?? []) as Produto[];
   const tarefas = [...((atrasadasR.data ?? []) as Tarefa[]), ...((doDiaR.data ?? []) as Tarefa[])];
   const nomeColab = new Map(colaboradores.map((c) => [c.id, c.nome]));

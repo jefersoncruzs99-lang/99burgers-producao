@@ -169,8 +169,8 @@ export async function desenharEtiqueta(e: EtiquetaEmitida, origem: string): Prom
 export type ModoImpressao = "rawbt-pdf" | "rawbt-tspl" | "navegador";
 
 export const MODOS_IMPRESSAO: { valor: ModoImpressao; rotulo: string; ajuda: string }[] = [
-  { valor: "rawbt-pdf", rotulo: "RawBT (recomendado)", ajuda: "Envia para o app RawBT, que imprime na Knup pelo Bluetooth." },
-  { valor: "rawbt-tspl", rotulo: "RawBT modo direto (TSPL)", ajuda: "Use se o modo recomendado sair cortado ou fora de posição." },
+  { valor: "rawbt-tspl", rotulo: "RawBT modo direto (recomendado)", ajuda: "Manda os comandos de etiqueta (TSPL) prontos para a Knup KP-IM608 pelo RawBT." },
+  { valor: "rawbt-pdf", rotulo: "RawBT por PDF", ajuda: "Para impressoras que não aceitam o modo direto." },
   { valor: "navegador", rotulo: "Impressão do Android", ajuda: "Abre a tela de impressão do Chrome." },
 ];
 
@@ -183,7 +183,7 @@ export function lerModo(): ModoImpressao {
   } catch {
     // sem armazenamento: usa o padrão
   }
-  return "rawbt-pdf";
+  return "rawbt-tspl";
 }
 
 export function salvarModo(m: ModoImpressao) {

@@ -3,10 +3,11 @@
 import { useActionState } from "react";
 import { entrarCozinha, type EstadoCodigo } from "./actions";
 
-export function FormCodigo() {
+export function FormCodigo({ destino = "/cozinha" }: { destino?: string }) {
   const [estado, acao, enviando] = useActionState<EstadoCodigo, FormData>(entrarCozinha, {});
   return (
     <form action={acao} className="cartao pilha">
+      <input type="hidden" name="destino" value={destino} />
       <div className="campo">
         <label htmlFor="codigo">Código da cozinha</label>
         <input

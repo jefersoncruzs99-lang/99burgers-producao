@@ -3,7 +3,7 @@
 App da cozinha para delegar e acompanhar as tarefas de pré-preparo, produção, organização e limpeza das equipes da **Marmitaria** e da **Hamburgueria**.
 
 - **Tablet da cozinha** (`/cozinha`): a pessoa escolhe o setor, toca no próprio nome e vê as tarefas de hoje e da semana. Ao tocar no produto, abre a **ficha técnica já recalculada** para a quantidade do dia. Marca "Comecei" / "Terminei", informa quanto fez e tira foto quando a tarefa exige.
-- **Etiquetas de validade** (`/cozinha/etiquetas`): a pessoa toca no nome, escolhe o produto e como vai guardar (resfriado, congelado, ambiente) e imprime etiquetas 60 × 50 mm com a logo, data de manipulação, vencimento, responsável, lote e QR. Também aparece o botão "Imprimir etiqueta" quando uma tarefa de produção é entregue.
+- **Etiquetas de validade** (`/etiquetas`): app próprio (dá para "Adicionar à tela inicial" como **Etiquetas 99**) usado pela cozinha, salão e operação, com o mesmo código do tablet. A pessoa toca no nome, escolhe o produto e como vai guardar (resfriado, congelado, ambiente) e imprime etiquetas 60 × 50 mm com a logo, data de manipulação, vencimento, responsável, lote e QR. Também aparece o botão "Imprimir etiqueta" quando uma tarefa de produção é entregue.
 - **Administração** (`/admin`): dono e líder entram com o login do painel 99 Burgers para montar o quadro do dia, cadastrar tarefas recorrentes (diárias e semanais), equipe, produtos e fichas técnicas, e aprovar entregas com foto.
 
 ## Tecnologias
@@ -53,7 +53,7 @@ npm run typecheck && npm test && npm run build
 ```
 
 ## Uso do dia a dia
-1. **Equipe**: cadastre os colaboradores em cada setor.
+1. **Equipe**: cadastre os colaboradores em cada setor e marque onde cada um aparece: **Tarefas** (produção) e/ou **Etiquetas** (salão e operação costumam ter só etiquetas).
 2. **Produtos e fichas**: cadastre os produtos e a ficha técnica (quanto rende + ingredientes + preparo).
 3. **Tarefas recorrentes**: o que se repete (ex.: "Feijão 3 kg" diária; "Limpar geladeira" semanal com foto).
 4. **Quadro do dia**: confira, troque responsáveis e crie tarefas avulsas.
@@ -64,6 +64,6 @@ npm run typecheck && npm test && npm run build
 1. Instale o app **RawBT** (Play Store) no tablet.
 2. Pareie a impressora pelo Bluetooth do Android e escolha a Knup no RawBT (Configurações → Impressora). Papel: 60 × 50 mm.
 3. No app, abra **Etiquetas → ⚙ Impressora** e toque em **Imprimir etiqueta de teste**.
-4. Se sair cortada ou fora de posição, troque para **RawBT modo direto (TSPL)**. Se nada funcionar, use **Impressão do Android**.
+4. O padrão é **RawBT modo direto (TSPL)**, testado na Knup KP-IM608. Para outras impressoras, troque para **RawBT por PDF** ou **Impressão do Android**.
 
 A validade de cada produto se ajusta em `/admin/etiquetas`. O QR da etiqueta abre `/etiqueta/LOTE`, que mostra se o produto ainda está na validade.
