@@ -71,9 +71,14 @@ export default async function Cozinha({
         </div>
       )}
 
-      <Link href="/cozinha/contagem" className="botao grande cheio">
-        📦 Contagem de estoque da semana
-      </Link>
+      <div className="linha">
+        <Link href="/cozinha/etiquetas" className="botao primario grande" style={{ flex: "1 1 240px" }}>
+          🏷 Etiquetas de validade
+        </Link>
+        <Link href="/cozinha/contagem" className="botao grande" style={{ flex: "1 1 240px" }}>
+          📦 Contagem de estoque da semana
+        </Link>
+      </div>
 
       {comPessoas.length === 0 && (
         <div className="aviso">Nenhum colaborador cadastrado ainda. Peça para a líder cadastrar a equipe.</div>

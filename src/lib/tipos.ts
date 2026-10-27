@@ -155,3 +155,51 @@ export interface FichaCozinha {
   armazenamento: string | null;
   ingredientes: { nome: string; quantidade: number; unidade: string }[];
 }
+
+// ===================== ETIQUETAS =====================
+
+export type TipoEtiqueta = "preparo" | "aberto" | "descongelado";
+export type Conservacao = "resfriado" | "congelado" | "ambiente";
+
+export interface EtiquetaItem {
+  id: string;
+  nome: string;
+  grupo: string;
+  tipo: TipoEtiqueta;
+  produto_id: string | null;
+  temperatura_resfriado: string;
+  dias_resfriado: number | null;
+  dias_congelado: number | null;
+  dias_ambiente: number | null;
+  observacao: string | null;
+}
+
+export interface EtiquetaItemAdmin extends EtiquetaItem {
+  base: string | null;
+  ordem: number;
+  ativo: boolean;
+}
+
+/** Uma etiqueta já registrada no banco (com lote), pronta para imprimir. */
+export interface EtiquetaEmitida {
+  id: string;
+  lote: string;
+  nome: string;
+  tipo: TipoEtiqueta;
+  setor: string | null;
+  conservacao: Conservacao;
+  temperatura: string;
+  manipulado_em: string;
+  validade_dias: number;
+  vence_em: string;
+  validade_original: string | null;
+  quantidade: number;
+  responsavel: string;
+  empresa: string | null;
+  cnpj: string | null;
+}
+
+export interface CatalogoEtiquetas {
+  itens: EtiquetaItem[];
+  recentes: EtiquetaEmitida[];
+}

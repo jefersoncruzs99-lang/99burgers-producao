@@ -3,6 +3,7 @@
 App da cozinha para delegar e acompanhar as tarefas de pré-preparo, produção, organização e limpeza das equipes da **Marmitaria** e da **Hamburgueria**.
 
 - **Tablet da cozinha** (`/cozinha`): a pessoa escolhe o setor, toca no próprio nome e vê as tarefas de hoje e da semana. Ao tocar no produto, abre a **ficha técnica já recalculada** para a quantidade do dia. Marca "Comecei" / "Terminei", informa quanto fez e tira foto quando a tarefa exige.
+- **Etiquetas de validade** (`/cozinha/etiquetas`): a pessoa toca no nome, escolhe o produto e como vai guardar (resfriado, congelado, ambiente) e imprime etiquetas 60 × 50 mm com a logo, data de manipulação, vencimento, responsável, lote e QR. Também aparece o botão "Imprimir etiqueta" quando uma tarefa de produção é entregue.
 - **Administração** (`/admin`): dono e líder entram com o login do painel 99 Burgers para montar o quadro do dia, cadastrar tarefas recorrentes (diárias e semanais), equipe, produtos e fichas técnicas, e aprovar entregas com foto.
 
 ## Tecnologias
@@ -23,6 +24,9 @@ Usa o **mesmo projeto Supabase do painel**. Todas as tabelas deste app têm o pr
 | `prod_config` | Código do tablet (só o hash) |
 | `prod_metas_estoque` | Meta de estoque por produto (semanal/quinzenal), dia de produzir e responsável |
 | `prod_contagens` / `prod_contagem_itens` | Contagem semanal; ao confirmar gera as tarefas com meta − estoque |
+| `prod_etiqueta_itens` | Prazo de validade de cada produto (resfriado, congelado, ambiente) |
+| `prod_etiquetas` | Cada etiqueta impressa, com lote, responsável e vencimento |
+| `prod_etiqueta_config` | Nome e CNPJ que saem na etiqueta |
 
 Migrações em `supabase/migrations/`. Todas já estão aplicadas no projeto do painel.
 
@@ -55,3 +59,11 @@ npm run typecheck && npm test && npm run build
 4. **Quadro do dia**: confira, troque responsáveis e crie tarefas avulsas.
 5. **Aprovações**: veja as fotos e aprove ou devolva para refazer.
 6. **Metas de estoque**: para geleias, molhos etc. Toda segunda alguém faz a contagem no tablet (📦 Contagem de estoque); ao confirmar, o responsável recebe "Produzir X: meta − estoque" no dia de produção, com a ficha técnica já multiplicada.
+
+## Etiquetas: impressora Knup KP-IM608
+1. Instale o app **RawBT** (Play Store) no tablet.
+2. Pareie a impressora pelo Bluetooth do Android e escolha a Knup no RawBT (Configurações → Impressora). Papel: 60 × 50 mm.
+3. No app, abra **Etiquetas → ⚙ Impressora** e toque em **Imprimir etiqueta de teste**.
+4. Se sair cortada ou fora de posição, troque para **RawBT modo direto (TSPL)**. Se nada funcionar, use **Impressão do Android**.
+
+A validade de cada produto se ajusta em `/admin/etiquetas`. O QR da etiqueta abre `/etiqueta/LOTE`, que mostra se o produto ainda está na validade.

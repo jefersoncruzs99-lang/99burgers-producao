@@ -110,6 +110,15 @@ export function CartaoTarefa({ tarefa: t, colaboradorId }: { tarefa: TarefaCozin
       )}
 
       {estado.ok && <div className="ok">{estado.ok}</div>}
+
+      {(entregue || estado.ok) && t.produto_id && (
+        <Link
+          href={`/cozinha/etiquetas/${colaboradorId}?produto=${t.produto_id}&tarefa=${t.id}`}
+          className="botao primario grande cheio"
+        >
+          🏷 Imprimir etiqueta de {t.produto_nome ?? "validade"}
+        </Link>
+      )}
     </article>
   );
 }
