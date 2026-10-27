@@ -125,7 +125,7 @@ function FormItem({ item, produtos }: { item?: EtiquetaItemAdmin; produtos: Pick
   return (
     <form action={salvarItemEtiqueta} className={`item-admin ${item && !item.ativo ? "inativo" : ""}`}>
       {item && <input type="hidden" name="id" value={item.id} />}
-      <div className="campo">
+      <div className="campo larg-2">
         <label htmlFor={`${pre}-nome`}>Produto</label>
         <input id={`${pre}-nome`} name="nome" defaultValue={item?.nome ?? ""} required />
       </div>
@@ -143,24 +143,7 @@ function FormItem({ item, produtos }: { item?: EtiquetaItemAdmin; produtos: Pick
           ))}
         </select>
       </div>
-      <div className="campo">
-        <label htmlFor={`${pre}-dr`}>Resfriado (dias)</label>
-        <input id={`${pre}-dr`} name="dias_resfriado" inputMode="numeric" defaultValue={item?.dias_resfriado ?? ""} />
-      </div>
-      <div className="campo">
-        <label htmlFor={`${pre}-dc`}>Congelado (dias)</label>
-        <input id={`${pre}-dc`} name="dias_congelado" inputMode="numeric" defaultValue={item?.dias_congelado ?? ""} />
-      </div>
-      <div className="campo">
-        <label htmlFor={`${pre}-da`}>Ambiente (dias)</label>
-        <input id={`${pre}-da`} name="dias_ambiente" inputMode="numeric" defaultValue={item?.dias_ambiente ?? ""} />
-      </div>
-      <div className="campo">
-        <label htmlFor={`${pre}-temp`}>Temperatura resfriado</label>
-        <input id={`${pre}-temp`} name="temperatura_resfriado" defaultValue={item?.temperatura_resfriado ?? "até 4 °C"} />
-      </div>
-      <button className="botao primario">{item ? "Salvar" : "Adicionar"}</button>
-      <div className="campo col-produto">
+      <div className="campo larg-2">
         <label htmlFor={`${pre}-prod`}>Ligado à tarefa do produto (opcional)</label>
         <select id={`${pre}-prod`} name="produto_id" defaultValue={item?.produto_id ?? ""}>
           <option value="">Nenhum</option>
@@ -171,7 +154,33 @@ function FormItem({ item, produtos }: { item?: EtiquetaItemAdmin; produtos: Pick
           ))}
         </select>
       </div>
-      <div className="campo col-obs">
+      <button className="botao primario">{item ? "Salvar" : "Adicionar"}</button>
+
+      <div className="campo">
+        <label htmlFor={`${pre}-dr`}>Resfriado (dias)</label>
+        <input id={`${pre}-dr`} name="dias_resfriado" inputMode="numeric" defaultValue={item?.dias_resfriado ?? ""} />
+      </div>
+      <div className="campo">
+        <label htmlFor={`${pre}-tr`}>Temp. resfriado</label>
+        <input id={`${pre}-tr`} name="temperatura_resfriado" defaultValue={item?.temperatura_resfriado ?? "Máximo 4 °C"} />
+      </div>
+      <div className="campo">
+        <label htmlFor={`${pre}-dc`}>Congelado (dias)</label>
+        <input id={`${pre}-dc`} name="dias_congelado" inputMode="numeric" defaultValue={item?.dias_congelado ?? ""} />
+      </div>
+      <div className="campo">
+        <label htmlFor={`${pre}-tc`}>Temp. congelado</label>
+        <input id={`${pre}-tc`} name="temperatura_congelado" defaultValue={item?.temperatura_congelado ?? "Abaixo de -18 °C"} />
+      </div>
+      <div className="campo">
+        <label htmlFor={`${pre}-da`}>Ambiente (dias)</label>
+        <input id={`${pre}-da`} name="dias_ambiente" inputMode="numeric" defaultValue={item?.dias_ambiente ?? ""} />
+      </div>
+      <div className="campo">
+        <label htmlFor={`${pre}-ta`}>Temp. ambiente</label>
+        <input id={`${pre}-ta`} name="temperatura_ambiente" defaultValue={item?.temperatura_ambiente ?? "Ambiente"} />
+      </div>
+      <div className="campo larg-tudo">
         <label htmlFor={`${pre}-obs`}>Aviso para a cozinha (opcional)</label>
         <input id={`${pre}-obs`} name="observacao" defaultValue={item?.observacao ?? ""} />
       </div>

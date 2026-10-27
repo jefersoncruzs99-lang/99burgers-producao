@@ -141,14 +141,14 @@ th { color: var(--cinza); font-size: .85rem; font-weight: 600; }
 .item-etiqueta .detalhe { font-size: .85rem; color: var(--amarelo); font-weight: 600; }
 .rotulo-grande { font-weight: 800; font-size: 1.1rem; }
 .previa-etiqueta { width: 100%; max-width: 480px; border-radius: 10px; background: #fff; border: 1px solid var(--borda); image-rendering: pixelated; }
-.item-admin { display: grid; gap: 8px; grid-template-columns: 2fr 1fr 1fr 90px 90px 90px 1.4fr auto; align-items: end; padding: 10px 0; border-bottom: 1px solid var(--borda); }
+.item-admin { display: grid; gap: 8px; grid-template-columns: repeat(6, minmax(0, 1fr)) auto; align-items: end; padding: 12px 0; border-bottom: 1px solid var(--borda); }
 .item-admin.inativo { opacity: .5; }
 .item-admin label { font-size: .75rem; color: var(--cinza); font-weight: 600; }
-.item-admin .col-produto { grid-column: 1 / span 3; }
-.item-admin .col-obs { grid-column: 4 / -1; }
+.item-admin .larg-2 { grid-column: span 2; }
+.item-admin .larg-tudo { grid-column: 1 / -1; }
 @media (max-width: 900px) {
-  .item-admin { grid-template-columns: 1fr 1fr 1fr; }
-  .item-admin .col-produto, .item-admin .col-obs { grid-column: 1 / -1; }
+  .item-admin { grid-template-columns: 1fr 1fr; }
+  .item-admin .larg-2 { grid-column: 1 / -1; }
 }
 
 .so-impressao { display: none; }
