@@ -128,3 +128,34 @@ th { color: var(--cinza); font-size: .85rem; font-weight: 600; }
   h1 { font-size: 1.35rem; }
   .container { padding: 12px; }
 }
+
+/* Etiquetas */
+.itens-etiqueta { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.item-etiqueta {
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;
+  min-height: 84px; padding: 12px 14px; border-radius: 14px; text-align: left; cursor: pointer;
+  background: var(--fundo-2); border: 2px solid var(--borda); color: var(--branco); font-family: inherit;
+}
+.item-etiqueta:hover { border-color: var(--amarelo); }
+.item-etiqueta .nome { font-size: 1.1rem; font-weight: 800; }
+.item-etiqueta .detalhe { font-size: .85rem; color: var(--amarelo); font-weight: 600; }
+.rotulo-grande { font-weight: 800; font-size: 1.1rem; }
+.previa-etiqueta { width: 100%; max-width: 480px; border-radius: 10px; background: #fff; border: 1px solid var(--borda); image-rendering: pixelated; }
+.item-admin { display: grid; gap: 8px; grid-template-columns: 2fr 1fr 1fr 90px 90px 90px 1.4fr auto; align-items: end; padding: 10px 0; border-bottom: 1px solid var(--borda); }
+.item-admin.inativo { opacity: .5; }
+.item-admin label { font-size: .75rem; color: var(--cinza); font-weight: 600; }
+.item-admin .col-produto { grid-column: 1 / span 3; }
+.item-admin .col-obs { grid-column: 4 / -1; }
+@media (max-width: 900px) {
+  .item-admin { grid-template-columns: 1fr 1fr 1fr; }
+  .item-admin .col-produto, .item-admin .col-obs { grid-column: 1 / -1; }
+}
+
+.so-impressao { display: none; }
+@media print {
+  @page { size: 60mm 50mm; margin: 0; }
+  body > *:not(.so-impressao) { display: none !important; }
+  body { background: #fff; }
+  .so-impressao { display: block; }
+  .so-impressao img { display: block; width: 60mm; height: 50mm; page-break-after: always; break-after: page; }
+}

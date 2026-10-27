@@ -8,6 +8,7 @@ import { COOKIE_COZINHA, rpcCozinha } from "@/lib/cozinha";
 import { numeroOuNulo, texto, textoOuNulo, uuidOuNulo } from "@/lib/form";
 import { itensDoFormulario } from "@/lib/estoque";
 import type { EstadoContagem } from "@/components/FormContagem";
+import type { Conservacao, EtiquetaEmitida } from "@/lib/tipos";
 
 export type EstadoCodigo = { erro?: string };
 
@@ -91,5 +92,48 @@ export async function salvarContagemCozinha(_: EstadoContagem, fd: FormData): Pr
     unstable_rethrow(e);
     if (e instanceof Error && e.message === "SEM_CODIGO") redirect("/cozinha");
     return { erro: e instanceof Error ? e.message : "Não foi possível salvar a contagem." };
+  }
+}
+
+// ===================== ETIQUETAS =====================
+
+export type PedidoEtiqueta = {
+  colaboradorId: string;
+  itemId: string;
+  conservacao: Conservacao;
+  quantidade: number;
+  dias?: number | null;
+  validadeOriginal?: string | null;
+  tarefaId?: string | null;
+};
+
+export type RespostaEtiqueta = { etiqueta?: EtiquetaEmitida; erro?: string };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Registra a etiqueta no banco (gera o lote) e devolve os dados para imprimir. */
+export async function emitirEtiqueta(p: PedidoEtiqueta): Promise<RespostaEtiqueta> {
+  if (!UUID.test(p.colaboradorId) || !UUID.test(p.itemId)) return { erro: "Escolha o produto e a pessoa." };
+  if (!["resfriado", "congelado", "ambiente"].includes(p.conservacao)) return { erro: "Escolha a conservação." };
+  const qtd = Math.round(Number(p.quantidade));
+  if (!Number.isFinite(qtd) || qtd < 1 || qtd > 50) return { erro: "Quantidade de etiquetas: de 1 a 50." };
+  const dias = p.dias === null || p.dias === undefined ? null : Math.round(Number(p.dias));
+  if (dias !== null && (!Number.isFinite(dias) || dias < 0 || dias > 3650)) return { erro: "Validade em dias inválida." };
+  const original = p.validadeOriginal && /^\d{4}-\d{2}-\d{2}$/.test(p.validadeOriginal) ? p.validadeOriginal : null;
+  try {
+    const etiqueta = await rpcCozinha<EtiquetaEmitida>("prod_cozinha_emitir_etiqueta", {
+      p_colaborador: p.colaboradorId,
+      p_item: p.itemId,
+      p_conservacao: p.conservacao,
+      p_quantidade: qtd,
+      p_dias: dias,
+      p_validade_original: original,
+      p_tarefa: p.tarefaId && UUID.test(p.tarefaId) ? p.tarefaId : null,
+    });
+    revalidatePath("/cozinha/etiquetas", "layout");
+    return { etiqueta };
+  } catch (e) {
+    if (e instanceof Error && e.message === "SEM_CODIGO") return { erro: "O tablet saiu da cozinha. Digite o código de novo." };
+    return { erro: e instanceof Error ? e.message : "Não foi possível gerar a etiqueta." };
   }
 }

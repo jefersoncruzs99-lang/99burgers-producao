@@ -28,6 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/modelos">Tarefas recorrentes</Link>
           <Link href="/admin/metas">Metas de estoque</Link>
           <Link href="/admin/produtos">Produtos e fichas</Link>
+          <Link href="/admin/etiquetas">Etiquetas</Link>
           <Link href="/admin/equipe">Equipe</Link>
           <Link href="/admin/config">Tablet</Link>
         </nav>

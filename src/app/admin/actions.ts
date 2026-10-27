@@ -429,3 +429,58 @@ export async function salvarContagemAdmin(_: EstadoContagem, fd: FormData): Prom
     return { erro: e instanceof Error ? e.message : "Erro ao salvar a contagem." };
   }
 }
+
+// ===================== ETIQUETAS =====================
+
+function diasOuNulo(fd: FormData, campo: string, rotulo: string): number | null {
+  const n = inteiroOuNulo(fd, campo, rotulo);
+  if (n !== null && n > 3650) throw new Error(`${rotulo}: no máximo 3650 dias.`);
+  return n;
+}
+
+export async function salvarItemEtiqueta(fd: FormData) {
+  const id = uuidOuNulo(fd, "id");
+  await executar("/admin/etiquetas", async () => {
+    const { supabase } = await exigirGestor();
+    const tipo = texto(fd, "tipo");
+    const dados = {
+      nome: exigir(texto(fd, "nome"), "Nome do produto"),
+      grupo: texto(fd, "grupo") || "Geral",
+      tipo: ["preparo", "aberto", "descongelado"].includes(tipo) ? tipo : "preparo",
+      produto_id: uuidOuNulo(fd, "produto_id"),
+      temperatura_resfriado: texto(fd, "temperatura_resfriado") || "até 4 °C",
+      dias_resfriado: diasOuNulo(fd, "dias_resfriado", "Resfriado"),
+      dias_congelado: diasOuNulo(fd, "dias_congelado", "Congelado"),
+      dias_ambiente: diasOuNulo(fd, "dias_ambiente", "Ambiente"),
+      observacao: textoOuNulo(fd, "observacao"),
+    };
+    const { error } = id
+      ? await supabase.from("prod_etiqueta_itens").update(dados).eq("id", id)
+      : await supabase.from("prod_etiqueta_itens").insert({ ...dados, ordem: 1000 });
+    falhou(error);
+  }, id ? "Validade salva." : "Produto adicionado às etiquetas.");
+}
+
+export async function alternarItemEtiqueta(fd: FormData) {
+  await executar("/admin/etiquetas", async () => {
+    const { supabase } = await exigirGestor();
+    const { error } = await supabase
+      .from("prod_etiqueta_itens")
+      .update({ ativo: texto(fd, "ativo") !== "true" })
+      .eq("id", exigir(uuidOuNulo(fd, "id") ?? "", "Item"));
+    falhou(error);
+  });
+}
+
+export async function salvarConfigEtiqueta(fd: FormData) {
+  await executar("/admin/etiquetas", async () => {
+    const { supabase } = await exigirGestor();
+    const { error } = await supabase.from("prod_etiqueta_config").upsert({
+      id: "padrao",
+      empresa: texto(fd, "empresa") || "NOVE NOVE BURGER'S",
+      cnpj: textoOuNulo(fd, "cnpj"),
+      updated_at: new Date().toISOString(),
+    });
+    falhou(error);
+  }, "Dados da etiqueta salvos.");
+}
