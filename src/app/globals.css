@@ -159,3 +159,23 @@ th { color: var(--cinza); font-size: .85rem; font-weight: 600; }
   .so-impressao { display: block; }
   .so-impressao img { display: block; width: 60mm; height: 50mm; page-break-after: always; break-after: page; }
 }
+
+/* Lista de impressão (várias etiquetas de uma vez) */
+.item-etiqueta-caixa { position: relative; display: flex; }
+.item-etiqueta-caixa .item-etiqueta { flex: 1; min-width: 0; padding-right: 64px; }
+.item-etiqueta-caixa.na-lista .item-etiqueta { border-color: var(--amarelo); }
+.mais-lista {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  width: 48px; height: 48px; border-radius: 12px; border: 2px solid var(--amarelo);
+  background: var(--fundo-3); color: var(--amarelo); font-size: 1.5rem; font-weight: 900; cursor: pointer;
+}
+.item-etiqueta-caixa.na-lista .mais-lista { background: var(--amarelo); color: var(--preto); font-size: 1.15rem; }
+.barra-lista {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--fundo-2); border: 2px solid var(--amarelo); border-radius: 16px; font-size: 1.1rem;
+}
+.fila { list-style: none; margin: 0; padding: 0; }
+.fila li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--borda); flex-wrap: wrap; }
+.previas-lista { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }

@@ -138,3 +138,23 @@ export async function emitirEtiqueta(p: PedidoEtiqueta): Promise<RespostaEtiquet
     return { erro: e instanceof Error ? e.message : "Não foi possível gerar a etiqueta." };
   }
 }
+
+export type RespostaEtiquetas = { etiquetas: EtiquetaEmitida[]; erro?: string };
+
+/**
+ * Registra várias etiquetas de uma vez (lista de impressão), na ordem em que vieram.
+ * Se uma falhar, para ali e devolve as que já foram registradas junto com o erro.
+ */
+export async function emitirEtiquetas(pedidos: PedidoEtiqueta[]): Promise<RespostaEtiquetas> {
+  if (!Array.isArray(pedidos) || pedidos.length === 0) return { etiquetas: [], erro: "A lista está vazia." };
+  if (pedidos.length > 40) return { etiquetas: [], erro: "No máximo 40 produtos por vez." };
+  const etiquetas: EtiquetaEmitida[] = [];
+  for (const p of pedidos) {
+    const r = await emitirEtiqueta(p);
+    if (!r.etiqueta) {
+      return { etiquetas, erro: r.erro ?? "Não foi possível gerar uma das etiquetas." };
+    }
+    etiquetas.push(r.etiqueta);
+  }
+  return { etiquetas };
+}

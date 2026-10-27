@@ -25,42 +25,53 @@ function juntar(partes: Uint8Array[]): Uint8Array {
   return out;
 }
 
+export interface ImagemPdf {
+  jpeg: Uint8Array;
+  copias: number;
+}
+
 /**
- * PDF com N páginas de 60 x 50 mm, todas com a mesma imagem JPEG (uma etiqueta por página).
- * O RawBT imprime PDF direto na impressora de etiquetas.
+ * PDF com uma página de 60 x 50 mm por etiqueta. Cada imagem pode ter várias cópias
+ * (a mesma imagem é reaproveitada). O RawBT imprime PDF direto na impressora de etiquetas.
  */
-export function pdfEtiquetas(
-  jpeg: Uint8Array,
-  largImg: number,
-  altImg: number,
-  copias: number,
-  larguraMm = 60,
-  alturaMm = 50,
-): Uint8Array {
-  const n = Math.max(1, Math.min(50, Math.floor(copias)));
+export function pdfVarias(imagens: ImagemPdf[], largImg: number, altImg: number, larguraMm = 60, alturaMm = 50): Uint8Array {
   const w = (larguraMm * MM_EM_PT).toFixed(2);
   const h = (alturaMm * MM_EM_PT).toFixed(2);
+  const conteudo = (i: number) => `q ${w} 0 0 ${h} 0 0 cm /Im${i} Do Q`;
 
-  // Objetos: 1 catálogo, 2 páginas, 3 imagem, 4 conteúdo, depois uma página por cópia.
-  const conteudo = `q ${w} 0 0 ${h} 0 0 cm /Im0 Do Q`;
+  // Objetos: 1 catálogo, 2 páginas, depois imagem + conteúdo de cada etiqueta, depois as páginas.
+  const lista = imagens.map((im) => ({ ...im, copias: Math.max(1, Math.min(50, Math.floor(im.copias))) }));
+  const base = 3;
+  const imgObj = (i: number) => base + i * 2;
+  const contObj = (i: number) => base + i * 2 + 1;
+  const primeiraPagina = base + lista.length * 2;
+  const paginas: number[] = [];
+  lista.forEach((im, i) => {
+    for (let c = 0; c < im.copias; c++) paginas.push(i);
+  });
+
   const objetos: Uint8Array[] = [];
-  const kids = Array.from({ length: n }, (_, i) => `${5 + i} 0 R`).join(" ");
   objetos.push(bytes(`<< /Type /Catalog /Pages 2 0 R >>`));
-  objetos.push(bytes(`<< /Type /Pages /Kids [${kids}] /Count ${n} >>`));
   objetos.push(
-    juntar([
-      bytes(
-        `<< /Type /XObject /Subtype /Image /Width ${largImg} /Height ${altImg} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`,
-      ),
-      jpeg,
-      bytes(`\nendstream`),
-    ]),
+    bytes(`<< /Type /Pages /Kids [${paginas.map((_, k) => `${primeiraPagina + k} 0 R`).join(" ")}] /Count ${paginas.length} >>`),
   );
-  objetos.push(bytes(`<< /Length ${conteudo.length} >>\nstream\n${conteudo}\nendstream`));
-  for (let i = 0; i < n; i++) {
+  lista.forEach((im, i) => {
+    objetos.push(
+      juntar([
+        bytes(
+          `<< /Type /XObject /Subtype /Image /Width ${largImg} /Height ${altImg} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.jpeg.length} >>\nstream\n`,
+        ),
+        im.jpeg,
+        bytes(`\nendstream`),
+      ]),
+    );
+    const c = conteudo(i);
+    objetos.push(bytes(`<< /Length ${c.length} >>\nstream\n${c}\nendstream`));
+  });
+  for (const i of paginas) {
     objetos.push(
       bytes(
-        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im0 3 0 R >> >> /Contents 4 0 R >>`,
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im${i} ${imgObj(i)} 0 R >> >> /Contents ${contObj(i)} 0 R >>`,
       ),
     );
   }
@@ -81,6 +92,11 @@ export function pdfEtiquetas(
     `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${pos}\n%%EOF\n`;
   partes.push(bytes(xref));
   return juntar(partes);
+}
+
+/** PDF com N cópias da mesma etiqueta. */
+export function pdfEtiquetas(jpeg: Uint8Array, largImg: number, altImg: number, copias: number, larguraMm = 60, alturaMm = 50): Uint8Array {
+  return pdfVarias([{ jpeg, copias }], largImg, altImg, larguraMm, alturaMm);
 }
 
 /**
@@ -105,17 +121,46 @@ export function bitmap1Bit(rgba: Uint8ClampedArray | Uint8Array, largura: number
   return out;
 }
 
-/** Comandos TSPL: tamanho da etiqueta, imagem e quantidade de cópias. */
-export function tsplEtiquetas(mono: Uint8Array, largura: number, altura: number, copias: number, larguraMm = 60, alturaMm = 50): Uint8Array {
-  const n = Math.max(1, Math.min(50, Math.floor(copias)));
+export interface BitmapTspl {
+  mono: Uint8Array;
+  copias: number;
+}
+
+/** Comandos TSPL: tamanho da etiqueta uma vez e, para cada etiqueta, a imagem e as cópias. */
+export function tsplVarias(lista: BitmapTspl[], largura: number, altura: number, larguraMm = 60, alturaMm = 50): Uint8Array {
   const porLinha = Math.ceil(largura / 8);
-  return juntar([
-    bytes(
-      `SIZE ${larguraMm} mm,${alturaMm} mm\r\nGAP 2 mm,0 mm\r\nDIRECTION 1\r\nREFERENCE 0,0\r\nDENSITY 10\r\nCLS\r\nBITMAP 0,0,${porLinha},${altura},0,`,
-    ),
-    mono,
-    bytes(`\r\nPRINT 1,${n}\r\n`),
-  ]);
+  const partes: Uint8Array[] = [
+    bytes(`SIZE ${larguraMm} mm,${alturaMm} mm\r\nGAP 2 mm,0 mm\r\nDIRECTION 1\r\nREFERENCE 0,0\r\nDENSITY 10\r\n`),
+  ];
+  for (const b of lista) {
+    const n = Math.max(1, Math.min(50, Math.floor(b.copias)));
+    partes.push(bytes(`CLS\r\nBITMAP 0,0,${porLinha},${altura},0,`), b.mono, bytes(`\r\nPRINT 1,${n}\r\n`));
+  }
+  return juntar(partes);
+}
+
+/** Comandos TSPL para N cópias da mesma etiqueta. */
+export function tsplEtiquetas(mono: Uint8Array, largura: number, altura: number, copias: number, larguraMm = 60, alturaMm = 50): Uint8Array {
+  return tsplVarias([{ mono, copias }], largura, altura, larguraMm, alturaMm);
+}
+
+/** Divide a lista em envios que não passem do limite de bytes (o Android limita o tamanho do link). */
+export function dividirEnvios<T>(lista: T[], tamanho: (x: T) => number, limite: number): T[][] {
+  const grupos: T[][] = [];
+  let atual: T[] = [];
+  let soma = 0;
+  for (const x of lista) {
+    const t = tamanho(x);
+    if (atual.length > 0 && soma + t > limite) {
+      grupos.push(atual);
+      atual = [];
+      soma = 0;
+    }
+    atual.push(x);
+    soma += t;
+  }
+  if (atual.length > 0) grupos.push(atual);
+  return grupos;
 }
 
 export function paraBase64(dados: Uint8Array): string {
