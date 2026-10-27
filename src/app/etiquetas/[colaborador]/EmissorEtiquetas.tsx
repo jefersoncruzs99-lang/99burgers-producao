@@ -11,9 +11,17 @@ import {
   textoValidade,
   type OpcaoConservacao,
 } from "@/lib/etiqueta";
-import { MODOS_IMPRESSAO, imprimirEtiqueta, lerModo, salvarModo, type ModoImpressao } from "@/lib/etiqueta-desenho";
+import {
+  MODOS_IMPRESSAO,
+  enviarParaRawbt,
+  imprimirEtiqueta,
+  imprimirVarias,
+  lerModo,
+  salvarModo,
+  type ModoImpressao,
+} from "@/lib/etiqueta-desenho";
 import type { Conservacao, EtiquetaEmitida, EtiquetaItem } from "@/lib/tipos";
-import { emitirEtiqueta } from "@/app/cozinha/actions";
+import { emitirEtiqueta, emitirEtiquetas } from "@/app/cozinha/actions";
 
 /** Grupo que abre primeiro para cada setor (a pessoa pode trocar). */
 const GRUPO_DO_SETOR: Record<string, string> = {
@@ -22,6 +30,23 @@ const GRUPO_DO_SETOR: Record<string, string> = {
   Operação: "Operação 99",
   Salão: "Operação 99",
 };
+
+/** Um produto na lista de impressão (várias etiquetas de uma vez). */
+type ItemFila = {
+  chave: string;
+  item: EtiquetaItem;
+  conservacao: Conservacao;
+  dias: number | null; // prazo digitado da embalagem (quando o item não tem prazo cadastrado)
+  validadeOriginal: string | null;
+  copias: number;
+  tarefaId: string | null;
+};
+
+let contadorFila = 0;
+function novaChave() {
+  contadorFila += 1;
+  return `f${Date.now()}-${contadorFila}`;
+}
 
 type Props = {
   colaboradorId: string;
@@ -40,6 +65,9 @@ export function EmissorEtiquetas({ colaboradorId, setor, itens, recentes, produt
   const [modo, setModo] = useState<ModoImpressao>("rawbt-tspl");
   const [mostrarConfig, setMostrarConfig] = useState(false);
   const [historico, setHistorico] = useState<EtiquetaEmitida[]>(recentes);
+  const [fila, setFila] = useState<ItemFila[]>([]);
+  const [verLista, setVerLista] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => setModo(lerModo()), []);
 
@@ -50,6 +78,30 @@ export function EmissorEtiquetas({ colaboradorId, setor, itens, recentes, produt
     if (grupo && grupos.includes(grupo)) return itens.filter((i) => i.grupo === grupo);
     return itens;
   }, [itens, busca, grupo, grupos]);
+
+  const totalEtiquetas = fila.reduce((s, f) => s + f.copias, 0);
+
+  function adicionar(entrada: Omit<ItemFila, "chave">) {
+    setFila((f) => {
+      // mesmo produto e mesma conservação: soma as cópias
+      const igual = f.find(
+        (x) => x.item.id === entrada.item.id && x.conservacao === entrada.conservacao && x.dias === entrada.dias && x.validadeOriginal === entrada.validadeOriginal,
+      );
+      if (igual) return f.map((x) => (x === igual ? { ...x, copias: Math.min(50, x.copias + entrada.copias) } : x));
+      return [...f, { ...entrada, chave: novaChave() }];
+    });
+    setAviso(`${entrada.item.nome} entrou na lista.`);
+  }
+
+  function adicionarRapido(i: EtiquetaItem) {
+    const primeira = opcoesConservacao(i)[0];
+    if (!primeira || primeira.dias === null) {
+      // precisa digitar o prazo da embalagem: abre o formulário
+      setItem(i);
+      return;
+    }
+    adicionar({ item: i, conservacao: primeira.conservacao, dias: null, validadeOriginal: null, copias: 1, tarefaId: null });
+  }
 
   function trocarModo(m: ModoImpressao) {
     setModo(m);
@@ -62,7 +114,7 @@ export function EmissorEtiquetas({ colaboradorId, setor, itens, recentes, produt
         <div className="aviso">Este produto ainda não tem validade cadastrada. Escolha na lista ou peça para a líder cadastrar.</div>
       )}
 
-      {item ? (
+      {verLista ? null : item ? (
         <FormEtiqueta
           key={item.id}
           item={item}
@@ -71,6 +123,10 @@ export function EmissorEtiquetas({ colaboradorId, setor, itens, recentes, produt
           modo={modo}
           aoVoltar={() => setItem(null)}
           aoEmitir={(e) => setHistorico((h) => [e, ...h].slice(0, 15))}
+          aoAdicionar={(entrada) => {
+            adicionar(entrada);
+            setItem(null);
+          }}
         />
       ) : (
         <>
@@ -97,14 +153,69 @@ export function EmissorEtiquetas({ colaboradorId, setor, itens, recentes, produt
           )}
           {visiveis.length === 0 && <div className="aviso">Nenhum produto encontrado.</div>}
           <div className="itens-etiqueta">
-            {visiveis.map((i) => (
-              <button key={i.id} type="button" className="item-etiqueta" onClick={() => setItem(i)}>
-                <span className="nome">{i.nome}</span>
-                <span className="detalhe">{resumoPrazo(i)}</span>
-              </button>
-            ))}
+            {visiveis.map((i) => {
+              const naLista = fila.filter((f) => f.item.id === i.id).reduce((s, f) => s + f.copias, 0);
+              return (
+                <div key={i.id} className={`item-etiqueta-caixa ${naLista > 0 ? "na-lista" : ""}`}>
+                  <button type="button" className="item-etiqueta" onClick={() => setItem(i)}>
+                    <span className="nome">{i.nome}</span>
+                    <span className="detalhe">{resumoPrazo(i)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="mais-lista"
+                    onClick={() => adicionarRapido(i)}
+                    aria-label={`Adicionar ${i.nome} à lista`}
+                    title="Adicionar à lista"
+                  >
+                    {naLista > 0 ? naLista : "+"}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </>
+      )}
+
+      {aviso && fila.length > 0 && !verLista && (
+        <div className="ok" role="status">
+          {aviso} Toque em <strong>Imprimir tudo</strong> quando terminar.
+        </div>
+      )}
+
+      {verLista && (
+        <ListaImpressao
+          fila={fila}
+          colaboradorId={colaboradorId}
+          modo={modo}
+          aoMudar={setFila}
+          aoFechar={() => setVerLista(false)}
+          aoImprimir={(es) => {
+            setHistorico((h) => [...es, ...h].slice(0, 15));
+          }}
+        />
+      )}
+
+      {fila.length > 0 && !verLista && (
+        <div className="barra-lista" role="region" aria-label="Lista de impressão">
+          <span>
+            <strong>
+              {fila.length} produto{fila.length > 1 ? "s" : ""}
+            </strong>{" "}
+            · {totalEtiquetas} etiqueta{totalEtiquetas > 1 ? "s" : ""}
+          </span>
+          <button
+            type="button"
+            className="botao primario grande"
+            onClick={() => {
+              setAviso(null);
+              setVerLista(true);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
+            🧾 Ver lista e imprimir
+          </button>
+        </div>
       )}
 
       {historico.length > 0 && (
@@ -187,6 +298,7 @@ function FormEtiqueta({
   modo,
   aoVoltar,
   aoEmitir,
+  aoAdicionar,
 }: {
   item: EtiquetaItem;
   colaboradorId: string;
@@ -194,6 +306,7 @@ function FormEtiqueta({
   modo: ModoImpressao;
   aoVoltar: () => void;
   aoEmitir: (e: EtiquetaEmitida) => void;
+  aoAdicionar: (entrada: Omit<ItemFila, "chave">) => void;
 }) {
   const opcoes = opcoesConservacao(item);
   const [escolha, setEscolha] = useState<OpcaoConservacao>(opcoes[0]!);
@@ -232,6 +345,22 @@ function FormEtiqueta({
       } catch (e) {
         setErro(e instanceof Error ? e.message : "Etiqueta registrada, mas a impressão falhou. Use Reimprimir.");
       }
+    });
+  }
+
+  function adicionarNaLista() {
+    setErro(null);
+    if (precisaDias && dias.trim() === "") {
+      setErro("Digite em quantos dias vence (está na embalagem).");
+      return;
+    }
+    aoAdicionar({
+      item,
+      conservacao: escolha.conservacao,
+      dias: precisaDias ? Number(dias) : null,
+      validadeOriginal: original || null,
+      copias: qtd,
+      tarefaId,
     });
   }
 
@@ -346,10 +475,171 @@ function FormEtiqueta({
           </div>
 
           {erro && <div className="erro">{erro}</div>}
-          <button type="button" className="botao primario grande cheio" disabled={pendente} onClick={imprimir}>
-            {pendente ? "Gerando etiqueta..." : `🏷 Imprimir ${qtd} etiqueta${qtd > 1 ? "s" : ""}`}
-          </button>
+          <div className="linha">
+            <button type="button" className="botao grande" style={{ flex: "1 1 220px" }} disabled={pendente} onClick={adicionarNaLista}>
+              ➕ Adicionar à lista
+            </button>
+            <button type="button" className="botao primario grande" style={{ flex: "1 1 220px" }} disabled={pendente} onClick={imprimir}>
+              {pendente ? "Gerando etiqueta..." : `🏷 Imprimir ${qtd} agora`}
+            </button>
+          </div>
         </>
+      )}
+    </section>
+  );
+}
+
+function ListaImpressao({
+  fila,
+  colaboradorId,
+  modo,
+  aoMudar,
+  aoFechar,
+  aoImprimir,
+}: {
+  fila: ItemFila[];
+  colaboradorId: string;
+  modo: ModoImpressao;
+  aoMudar: (f: ItemFila[] | ((f: ItemFila[]) => ItemFila[])) => void;
+  aoFechar: () => void;
+  aoImprimir: (e: EtiquetaEmitida[]) => void;
+}) {
+  const [pendente, iniciar] = useTransition();
+  const [erro, setErro] = useState<string | null>(null);
+  const [feito, setFeito] = useState<{ total: number; previas: string[] } | null>(null);
+  const [restantes, setRestantes] = useState<string[]>([]);
+  const total = fila.reduce((s, f) => s + f.copias, 0);
+
+  function mudarCopias(chave: string, delta: number) {
+    aoMudar((f) => f.map((x) => (x.chave === chave ? { ...x, copias: Math.max(1, Math.min(50, x.copias + delta)) } : x)));
+  }
+  function remover(chave: string) {
+    aoMudar((f) => f.filter((x) => x.chave !== chave));
+  }
+
+  function imprimirTudo() {
+    setErro(null);
+    iniciar(async () => {
+      const r = await emitirEtiquetas(
+        fila.map((f) => ({
+          colaboradorId,
+          itemId: f.item.id,
+          conservacao: f.conservacao,
+          quantidade: f.copias,
+          dias: f.dias,
+          validadeOriginal: f.validadeOriginal,
+          tarefaId: f.tarefaId,
+        })),
+      );
+      if (r.etiquetas.length > 0) aoImprimir(r.etiquetas);
+      // o que já foi registrado sai da lista; o resto fica para tentar de novo
+      const feitos = r.etiquetas.length;
+      const paraImprimir = fila.slice(0, feitos).map((f, i) => ({ etiqueta: r.etiquetas[i]!, copias: f.copias }));
+      if (r.erro) setErro(`${r.erro} As ${feitos} primeiras foram registradas; o resto continua na lista.`);
+      if (paraImprimir.length > 0) {
+        try {
+          const res = await imprimirVarias(paraImprimir, modo);
+          setRestantes(res.restantes);
+          setFeito({ total: paraImprimir.reduce((s, x) => s + x.copias, 0), previas: res.previas });
+        } catch (e) {
+          setErro(e instanceof Error ? e.message : "As etiquetas foram registradas, mas a impressão falhou. Use Reimprimir.");
+        }
+      }
+      aoMudar((f) => f.slice(feitos));
+    });
+  }
+
+  if (feito && fila.length === 0) {
+    return (
+      <section className="cartao destaque pilha">
+        <div className="ok" style={{ fontSize: "1.15rem" }}>
+          {feito.total} etiqueta{feito.total > 1 ? "s" : ""} enviada{feito.total > 1 ? "s" : ""} para a impressora.
+        </div>
+        {restantes.length > 0 && (
+          <div className="aviso pilha">
+            <span>A lista é grande e vai em partes. Quando a impressora terminar, envie a próxima.</span>
+            <button
+              type="button"
+              className="botao primario grande"
+              onClick={() => {
+                const [proximo, ...resto] = restantes;
+                if (proximo) enviarParaRawbt(proximo);
+                setRestantes(resto);
+              }}
+            >
+              🖨 Enviar próxima parte ({restantes.length} restante{restantes.length > 1 ? "s" : ""})
+            </button>
+          </div>
+        )}
+        {erro && <div className="erro">{erro}</div>}
+        <div className="previas-lista">
+          {feito.previas.map((src, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={src} alt="" className="previa-etiqueta" />
+          ))}
+        </div>
+        <button type="button" className="botao grande" onClick={aoFechar}>
+          Voltar para os produtos
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="cartao destaque pilha">
+      <div className="linha entre">
+        <h2 style={{ margin: 0 }}>Lista de impressão</h2>
+        <button type="button" className="botao grande" onClick={aoFechar}>
+          + Adicionar mais
+        </button>
+      </div>
+      {fila.length === 0 ? (
+        <p className="muted">A lista está vazia. Toque no + dos produtos para adicionar.</p>
+      ) : (
+        <ul className="fila">
+          {fila.map((f) => (
+            <li key={f.chave}>
+              <div style={{ minWidth: 0 }}>
+                <strong>{f.item.nome}</strong>
+                <div className="muted pequeno">
+                  {ROTULO_CONSERVACAO[f.conservacao]} ·{" "}
+                  {textoValidade(
+                    f.dias ??
+                      (f.conservacao === "resfriado"
+                        ? f.item.dias_resfriado
+                        : f.conservacao === "congelado"
+                          ? f.item.dias_congelado
+                          : f.item.dias_ambiente) ??
+                      0,
+                  )}
+                </div>
+              </div>
+              <div className="linha" style={{ flexWrap: "nowrap" }}>
+                <button type="button" className="botao" onClick={() => mudarCopias(f.chave, -1)} aria-label="Menos">
+                  −
+                </button>
+                <span className="qtd" style={{ minWidth: 40, textAlign: "center", fontSize: "1.3rem" }}>
+                  {f.copias}
+                </span>
+                <button type="button" className="botao" onClick={() => mudarCopias(f.chave, 1)} aria-label="Mais">
+                  +
+                </button>
+                <button type="button" className="botao perigo" onClick={() => remover(f.chave)} aria-label={`Tirar ${f.item.nome}`}>
+                  ✕
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {erro && <div className="erro">{erro}</div>}
+      <button type="button" className="botao primario grande cheio" disabled={pendente || fila.length === 0} onClick={imprimirTudo}>
+        {pendente ? "Gerando etiquetas..." : `🏷 Imprimir tudo (${total} etiqueta${total > 1 ? "s" : ""})`}
+      </button>
+      {fila.length > 0 && (
+        <button type="button" className="botao" style={{ alignSelf: "flex-start" }} onClick={() => aoMudar([])}>
+          Limpar lista
+        </button>
       )}
     </section>
   );

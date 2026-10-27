@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { camposEtiqueta, dataEtiqueta, diaSemanaEtiqueta, horaEtiqueta, normalizar, opcoesConservacao, vencida } from "@/lib/etiqueta";
-import { bitmap1Bit, pdfEtiquetas, tsplEtiquetas } from "@/lib/etiqueta-arquivos";
+import { bitmap1Bit, dividirEnvios, pdfEtiquetas, pdfVarias, tsplEtiquetas, tsplVarias } from "@/lib/etiqueta-arquivos";
 import type { EtiquetaEmitida } from "@/lib/tipos";
 
 const base: EtiquetaEmitida = {
@@ -92,5 +92,32 @@ describe("arquivos da impressora", () => {
     expect(cmd).toContain("SIZE 60 mm,50 mm");
     expect(cmd).toContain("BITMAP 0,0,60,400,0,");
     expect(cmd.trimEnd().endsWith("PRINT 1,2")).toBe(true);
+  });
+});
+
+describe("várias etiquetas de uma vez", () => {
+  it("TSPL: tamanho uma vez e um PRINT por produto", () => {
+    const mono = new Uint8Array(60 * 400).fill(0xff);
+    const cmd = texto(tsplVarias([{ mono, copias: 2 }, { mono, copias: 5 }], 480, 400));
+    expect(cmd.match(/SIZE /g)).toHaveLength(1);
+    expect(cmd.match(/CLS/g)).toHaveLength(2);
+    expect(cmd).toContain("PRINT 1,2");
+    expect(cmd.trimEnd().endsWith("PRINT 1,5")).toBe(true);
+  });
+
+  it("PDF: uma página por cópia, reaproveitando a imagem de cada produto", () => {
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
+    const pdf = texto(pdfVarias([{ jpeg, copias: 2 }, { jpeg, copias: 3 }], 480, 400));
+    expect(pdf).toContain("/Count 5");
+    expect(pdf.match(/\/Subtype \/Image/g)).toHaveLength(2);
+    expect(pdf.match(/\/Type \/Page /g)).toHaveLength(5);
+    const inicio = Number(pdf.match(/startxref\n(\d+)/)?.[1]);
+    expect(pdf.slice(inicio, inicio + 4)).toBe("xref");
+  });
+
+  it("divide envios grandes em partes", () => {
+    const partes = dividirEnvios([10, 10, 10, 10, 10], (x) => x, 25);
+    expect(partes.map((p) => p.length)).toEqual([2, 2, 1]);
+    expect(dividirEnvios([30], (x) => x, 25)).toEqual([[30]]);
   });
 });

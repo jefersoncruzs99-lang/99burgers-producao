@@ -66,4 +66,6 @@ npm run typecheck && npm test && npm run build
 3. No app, abra **Etiquetas → ⚙ Impressora** e toque em **Imprimir etiqueta de teste**.
 4. O padrão é **RawBT modo direto (TSPL)**, testado na Knup KP-IM608. Para outras impressoras, troque para **RawBT por PDF** ou **Impressão do Android**.
 
+**Várias etiquetas de uma vez:** toque no **+** dos produtos (ou em "Adicionar à lista"), ajuste as quantidades em **Ver lista e imprimir** e toque em **Imprimir tudo**. Tudo vai num envio só para a Knup; listas muito grandes vão em partes.
+
 A validade de cada produto se ajusta em `/admin/etiquetas`. O QR da etiqueta abre `/etiqueta/LOTE`, que mostra se o produto ainda está na validade.

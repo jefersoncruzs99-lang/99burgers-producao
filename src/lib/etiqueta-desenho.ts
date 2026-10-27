@@ -5,9 +5,10 @@ import {
   LARGURA_PONTOS,
   bitmap1Bit,
   deBase64,
+  dividirEnvios,
   paraBase64,
-  pdfEtiquetas,
-  tsplEtiquetas,
+  pdfVarias,
+  tsplVarias,
 } from "./etiqueta-arquivos";
 import type { EtiquetaEmitida } from "./tipos";
 
@@ -194,38 +195,85 @@ export function salvarModo(m: ModoImpressao) {
   }
 }
 
-/** Envia as etiquetas para a impressora. Retorna a imagem (para a prévia). */
-export async function imprimirEtiqueta(e: EtiquetaEmitida, copias: number, modo: ModoImpressao): Promise<string> {
-  const canvas = await desenharEtiqueta(e, window.location.origin);
-  const png = canvas.toDataURL("image/png");
-
-  if (modo === "rawbt-pdf") {
-    const jpeg = deBase64(canvas.toDataURL("image/jpeg", 0.95).split(",")[1] ?? "");
-    const pdf = pdfEtiquetas(jpeg, canvas.width, canvas.height, copias);
-    window.location.href = `rawbt:data:application/pdf;base64,${paraBase64(pdf)}`;
-  } else if (modo === "rawbt-tspl") {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Não foi possível preparar a etiqueta.");
-    const px = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    const tspl = tsplEtiquetas(bitmap1Bit(px, canvas.width, canvas.height), canvas.width, canvas.height, copias);
-    window.location.href = `rawbt:base64,${paraBase64(tspl)}`;
-  } else {
-    imprimirPeloNavegador(png, copias);
-  }
-  return png;
+export interface ItemImpressao {
+  etiqueta: EtiquetaEmitida;
+  copias: number;
 }
 
-function imprimirPeloNavegador(png: string, copias: number) {
+export interface ResultadoImpressao {
+  /** Prévia (PNG) de cada etiqueta, na ordem da lista. */
+  previas: string[];
+  /** Envios que ainda faltam mandar para o RawBT (listas grandes vão em partes). */
+  restantes: string[];
+}
+
+/** Tamanho máximo de cada envio para o RawBT (o Android limita o tamanho do link). */
+const LIMITE_ENVIO = 420_000;
+
+/**
+ * Desenha todas as etiquetas e manda para a impressora num envio só.
+ * Se a lista for muito grande, manda a primeira parte e devolve as outras em `restantes`.
+ */
+export async function imprimirVarias(lista: ItemImpressao[], modo: ModoImpressao): Promise<ResultadoImpressao> {
+  if (lista.length === 0) return { previas: [], restantes: [] };
+  const origem = window.location.origin;
+  const canvases: HTMLCanvasElement[] = [];
+  for (const item of lista) canvases.push(await desenharEtiqueta(item.etiqueta, origem));
+  const previas = canvases.map((c) => c.toDataURL("image/png"));
+
+  if (modo === "navegador") {
+    imprimirPeloNavegador(previas.map((png, i) => ({ png, copias: lista[i]!.copias })));
+    return { previas, restantes: [] };
+  }
+
+  let envios: string[];
+  if (modo === "rawbt-pdf") {
+    const imagens = canvases.map((c, i) => ({
+      jpeg: deBase64(c.toDataURL("image/jpeg", 0.95).split(",")[1] ?? ""),
+      copias: lista[i]!.copias,
+    }));
+    envios = dividirEnvios(imagens, (im) => im.jpeg.length + 600, LIMITE_ENVIO).map(
+      (parte) => `rawbt:data:application/pdf;base64,${paraBase64(pdfVarias(parte, LARGURA_PONTOS, ALTURA_PONTOS))}`,
+    );
+  } else {
+    const bitmaps = canvases.map((c, i) => {
+      const ctx = c.getContext("2d");
+      if (!ctx) throw new Error("Não foi possível preparar a etiqueta.");
+      return { mono: bitmap1Bit(ctx.getImageData(0, 0, c.width, c.height).data, c.width, c.height), copias: lista[i]!.copias };
+    });
+    envios = dividirEnvios(bitmaps, (b) => b.mono.length + 60, LIMITE_ENVIO).map(
+      (parte) => `rawbt:base64,${paraBase64(tsplVarias(parte, LARGURA_PONTOS, ALTURA_PONTOS))}`,
+    );
+  }
+  const [primeiro, ...restantes] = envios;
+  if (primeiro) enviarParaRawbt(primeiro);
+  return { previas, restantes };
+}
+
+/** Abre o RawBT com um envio já preparado. */
+export function enviarParaRawbt(url: string) {
+  window.location.href = url;
+}
+
+/** Envia uma etiqueta (com cópias) para a impressora. Retorna a imagem (para a prévia). */
+export async function imprimirEtiqueta(e: EtiquetaEmitida, copias: number, modo: ModoImpressao): Promise<string> {
+  const r = await imprimirVarias([{ etiqueta: e, copias }], modo);
+  return r.previas[0] ?? "";
+}
+
+function imprimirPeloNavegador(lista: { png: string; copias: number }[]) {
   const id = "area-impressao-etiquetas";
   document.getElementById(id)?.remove();
   const area = document.createElement("div");
   area.id = id;
   area.className = "so-impressao";
-  for (let i = 0; i < Math.max(1, copias); i++) {
-    const img = document.createElement("img");
-    img.src = png;
-    img.alt = "";
-    area.appendChild(img);
+  for (const { png, copias } of lista) {
+    for (let i = 0; i < Math.max(1, copias); i++) {
+      const img = document.createElement("img");
+      img.src = png;
+      img.alt = "";
+      area.appendChild(img);
+    }
   }
   document.body.appendChild(area);
   const imgs = Array.from(area.querySelectorAll("img"));
