@@ -140,7 +140,7 @@ export default async function Metas({ searchParams }: { searchParams: ParamsPagi
             <select id="responsavel_id" name="responsavel_id" defaultValue={editando?.responsavel_id ?? ""}>
               <option value="">Definir no dia</option>
               {colaboradores
-                .filter((x) => x.ativo)
+                .filter((x) => x.ativo && x.usa_tarefas)
                 .map((x) => (
                   <option key={x.id} value={x.id}>
                     {x.nome}

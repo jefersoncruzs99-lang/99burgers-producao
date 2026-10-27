@@ -72,7 +72,7 @@ export default async function Cozinha({
       )}
 
       <div className="linha">
-        <Link href="/cozinha/etiquetas" className="botao primario grande" style={{ flex: "1 1 240px" }}>
+        <Link href="/etiquetas?de=cozinha" className="botao primario grande" style={{ flex: "1 1 240px" }}>
           🏷 Etiquetas de validade
         </Link>
         <Link href="/cozinha/contagem" className="botao grande" style={{ flex: "1 1 240px" }}>

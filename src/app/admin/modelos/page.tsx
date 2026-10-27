@@ -67,7 +67,7 @@ export default async function Modelos({ searchParams }: { searchParams: ParamsPa
             <select id="colaborador_padrao_id" name="colaborador_padrao_id" defaultValue={editando?.colaborador_padrao_id ?? ""}>
               <option value="">Definir no dia</option>
               {colaboradores
-                .filter((x) => x.ativo)
+                .filter((x) => x.ativo && x.usa_tarefas)
                 .map((x) => (
                   <option key={x.id} value={x.id}>
                     {x.nome}

@@ -13,7 +13,7 @@ import {
 } from "@/lib/etiqueta";
 import { MODOS_IMPRESSAO, imprimirEtiqueta, lerModo, salvarModo, type ModoImpressao } from "@/lib/etiqueta-desenho";
 import type { Conservacao, EtiquetaEmitida, EtiquetaItem } from "@/lib/tipos";
-import { emitirEtiqueta } from "../../actions";
+import { emitirEtiqueta } from "@/app/cozinha/actions";
 
 type Props = {
   colaboradorId: string;

@@ -27,6 +27,8 @@ export interface Colaborador {
   nome: string;
   setor_id: string | null;
   ativo: boolean;
+  usa_tarefas: boolean;
+  usa_etiquetas: boolean;
 }
 
 export interface Produto {

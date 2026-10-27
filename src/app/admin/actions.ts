@@ -176,7 +176,10 @@ export async function salvarColaborador(fd: FormData) {
     const dados = {
       nome: exigir(texto(fd, "nome"), "Nome"),
       setor_id: exigir(uuidOuNulo(fd, "setor_id") ?? "", "Setor"),
+      usa_tarefas: marcado(fd, "usa_tarefas"),
+      usa_etiquetas: marcado(fd, "usa_etiquetas"),
     };
+    if (!dados.usa_tarefas && !dados.usa_etiquetas) throw new Error("Marque Tarefas, Etiquetas ou os dois.");
     const { error } = id
       ? await supabase.from("prod_colaboradores").update(dados).eq("id", id)
       : await supabase.from("prod_colaboradores").insert(dados);

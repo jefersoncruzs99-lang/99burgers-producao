@@ -27,7 +27,8 @@ export async function entrarCozinha(_: EstadoCodigo, fd: FormData): Promise<Esta
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
   });
-  redirect("/cozinha");
+  const destino = texto(fd, "destino");
+  redirect(destino === "/etiquetas" ? "/etiquetas" : "/cozinha");
 }
 
 export async function sairCozinha() {
@@ -130,7 +131,7 @@ export async function emitirEtiqueta(p: PedidoEtiqueta): Promise<RespostaEtiquet
       p_validade_original: original,
       p_tarefa: p.tarefaId && UUID.test(p.tarefaId) ? p.tarefaId : null,
     });
-    revalidatePath("/cozinha/etiquetas", "layout");
+    revalidatePath("/etiquetas", "layout");
     return { etiqueta };
   } catch (e) {
     if (e instanceof Error && e.message === "SEM_CODIGO") return { erro: "O tablet saiu da cozinha. Digite o código de novo." };
