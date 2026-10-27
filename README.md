@@ -64,6 +64,6 @@ npm run typecheck && npm test && npm run build
 1. Instale o app **RawBT** (Play Store) no tablet.
 2. Pareie a impressora pelo Bluetooth do Android e escolha a Knup no RawBT (Configurações → Impressora). Papel: 60 × 50 mm.
 3. No app, abra **Etiquetas → ⚙ Impressora** e toque em **Imprimir etiqueta de teste**.
-4. Se sair cortada ou fora de posição, troque para **RawBT modo direto (TSPL)**. Se nada funcionar, use **Impressão do Android**.
+4. O padrão é **RawBT modo direto (TSPL)**, testado na Knup KP-IM608. Para outras impressoras, troque para **RawBT por PDF** ou **Impressão do Android**.
 
 A validade de cada produto se ajusta em `/admin/etiquetas`. O QR da etiqueta abre `/etiqueta/LOTE`, que mostra se o produto ainda está na validade.

@@ -29,7 +29,7 @@ export function EmissorEtiquetas({ colaboradorId, setor, itens, recentes, produt
   const [busca, setBusca] = useState("");
   const [grupo, setGrupo] = useState<string | null>(inicial ? null : setor);
   const [item, setItem] = useState<EtiquetaItem | null>(inicial);
-  const [modo, setModo] = useState<ModoImpressao>("rawbt-pdf");
+  const [modo, setModo] = useState<ModoImpressao>("rawbt-tspl");
   const [mostrarConfig, setMostrarConfig] = useState(false);
   const [historico, setHistorico] = useState<EtiquetaEmitida[]>(recentes);
 
