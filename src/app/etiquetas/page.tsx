@@ -38,6 +38,9 @@ export default async function EtiquetasQuem({
         {erro && <div className="erro">{erro}</div>}
         {codigo && !erro && <div className="aviso">O código mudou. Digite o novo código.</div>}
         <FormCodigo destino="/etiquetas" />
+        <Link href="/admin/etiquetas" className="muted pequeno" style={{ textAlign: "center" }}>
+          ⚙ Administração: cadastrar e editar etiquetas
+        </Link>
       </main>
     );
   }
@@ -70,6 +73,9 @@ export default async function EtiquetasQuem({
           </div>
         </section>
       ))}
+      <Link href="/admin/etiquetas" className="botao" style={{ alignSelf: "flex-start", marginTop: 16 }}>
+        ⚙ Cadastrar e editar etiquetas
+      </Link>
     </main>
   );
 }

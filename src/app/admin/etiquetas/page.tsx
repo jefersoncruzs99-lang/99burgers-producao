@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { exigirGestor } from "@/lib/auth";
 import { Mensagens, type ParamsPagina } from "@/components/Mensagens";
 import { ROTULO_CONSERVACAO, ROTULO_TIPO, dataEtiqueta, horaEtiqueta, vencida } from "@/lib/etiqueta";
@@ -23,7 +24,12 @@ export default async function EtiquetasAdmin({ searchParams }: { searchParams: P
 
   return (
     <>
-      <h1>Etiquetas de validade</h1>
+      <div className="linha entre" style={{ flexWrap: "wrap", gap: 8 }}>
+        <h1 style={{ margin: 0 }}>Etiquetas de validade</h1>
+        <Link href="/etiquetas" className="botao">
+          🏷 Abrir o app de etiquetas
+        </Link>
+      </div>
       <p className="muted">
         Prazos que o tablet usa para calcular o vencimento. Deixe em branco a conservação que não se aplica. Se todas
         ficarem em branco, o tablet pede o prazo da embalagem na hora de imprimir.
