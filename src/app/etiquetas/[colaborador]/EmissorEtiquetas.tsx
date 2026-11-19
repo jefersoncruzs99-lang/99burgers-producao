@@ -13,6 +13,9 @@ import {
 } from "@/lib/etiqueta";
 import {
   MODOS_IMPRESSAO,
+  OPCOES_TAMANHO,
+  lerTamanho,
+  salvarTamanho,
   enviarParaRawbt,
   imprimirEtiqueta,
   imprimirVarias,
@@ -20,6 +23,7 @@ import {
   salvarModo,
   type ModoImpressao,
 } from "@/lib/etiqueta-desenho";
+import type { TamanhoEtiqueta } from "@/lib/etiqueta-arquivos";
 import type { Conservacao, EtiquetaEmitida, EtiquetaItem } from "@/lib/tipos";
 import { emitirEtiqueta, emitirEtiquetas } from "@/app/cozinha/actions";
 
@@ -63,13 +67,17 @@ export function EmissorEtiquetas({ colaboradorId, setor, itens, recentes, produt
   const [grupo, setGrupo] = useState<string | null>(inicial ? null : (GRUPO_DO_SETOR[setor] ?? setor));
   const [item, setItem] = useState<EtiquetaItem | null>(inicial);
   const [modo, setModo] = useState<ModoImpressao>("rawbt-tspl");
+  const [tamanho, setTamanho] = useState<TamanhoEtiqueta>("60x50");
   const [mostrarConfig, setMostrarConfig] = useState(false);
   const [historico, setHistorico] = useState<EtiquetaEmitida[]>(recentes);
   const [fila, setFila] = useState<ItemFila[]>([]);
   const [verLista, setVerLista] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
 
-  useEffect(() => setModo(lerModo()), []);
+  useEffect(() => {
+    setModo(lerModo());
+    setTamanho(lerTamanho());
+  }, []);
 
   const grupos = useMemo(() => Array.from(new Set(itens.map((i) => i.grupo))), [itens]);
   const visiveis = useMemo(() => {
@@ -264,6 +272,25 @@ export function EmissorEtiquetas({ colaboradorId, setor, itens, recentes, produt
         {mostrarConfig && (
           <div className="cartao pilha">
             <p className="muted">Escolha como este tablet envia as etiquetas para a Knup. A escolha fica salva neste tablet.</p>
+            <div className="pilha" style={{ gap: 6 }}>
+              <strong>Tamanho da etiqueta (rolo)</strong>
+              <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
+                {OPCOES_TAMANHO.map((t) => (
+                  <button
+                    key={t.valor}
+                    type="button"
+                    className={`botao ${tamanho === t.valor ? "primario" : ""}`}
+                    onClick={() => {
+                      setTamanho(t.valor);
+                      salvarTamanho(t.valor);
+                    }}
+                  >
+                    {t.rotulo}
+                  </button>
+                ))}
+              </div>
+              <span className="muted pequeno">Use o mesmo tamanho do rolo que está na impressora. Depois de trocar, imprima o teste abaixo.</span>
+            </div>
             {MODOS_IMPRESSAO.map((m) => (
               <label key={m.valor} className="check" style={{ alignItems: "flex-start" }}>
                 <input type="radio" name="modo" checked={modo === m.valor} onChange={() => trocarModo(m.valor)} />

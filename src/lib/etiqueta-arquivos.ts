@@ -5,6 +5,13 @@
 
 export const LARGURA_PONTOS = 480;
 export const ALTURA_PONTOS = 400;
+
+/** Tamanhos de etiqueta aceitos (largura x altura em mm, 203 dpi = 8 pontos por mm). */
+export type TamanhoEtiqueta = "60x50" | "60x40";
+export const TAMANHOS: Record<TamanhoEtiqueta, { larguraMm: number; alturaMm: number; largura: number; altura: number }> = {
+  "60x50": { larguraMm: 60, alturaMm: 50, largura: 480, altura: 400 },
+  "60x40": { larguraMm: 60, alturaMm: 40, largura: 480, altura: 320 },
+};
 const MM_EM_PT = 72 / 25.4;
 
 function bytes(s: string): Uint8Array {
