@@ -1,8 +1,9 @@
 import { create as criarQr } from "qrcode";
 import { camposEtiqueta } from "./etiqueta";
 import {
-  ALTURA_PONTOS,
   LARGURA_PONTOS,
+  TAMANHOS,
+  type TamanhoEtiqueta,
   bitmap1Bit,
   deBase64,
   dividirEnvios,
@@ -68,11 +69,26 @@ function nomeEmLinhas(ctx: CanvasRenderingContext2D, nome: string, larguraMax: n
   return { linhas: [nome], tamanho: 16 };
 }
 
-/** Desenha a etiqueta (modelo A) em um canvas de 480 x 400 pontos, só preto e branco. */
-export async function desenharEtiqueta(e: EtiquetaEmitida, origem: string): Promise<HTMLCanvasElement> {
+/** Medidas do desenho para cada tamanho de etiqueta (em pontos, 8 por mm). */
+const LAYOUT = {
+  "60x50": {
+    logo: { y: 12, tam: 74 }, nomeX: 86, nomeFonte: 30, sub: { min: 72, max: 88, fonte: 14 }, divisoria: 94,
+    qr: { tam: 86, y: 106 }, valorX: 142, rotuloLarg: 136, campos: { y: 126, passo: 29, passoApertado: 26, fonte: 19 },
+    faixa: { y: 296, alt: 58, textoY: 36, diaY: 43, texto: 18, dia: 38 }, rodape: { y: 386, fonte: 15 },
+  },
+  "60x40": {
+    logo: { y: 8, tam: 58 }, nomeX: 68, nomeFonte: 26, sub: { min: 56, max: 68, fonte: 12 }, divisoria: 74,
+    qr: { tam: 72, y: 84 }, valorX: 118, rotuloLarg: 112, campos: { y: 100, passo: 25, passoApertado: 21, fonte: 16 },
+    faixa: { y: 232, alt: 50, textoY: 31, diaY: 37, texto: 15, dia: 32 }, rodape: { y: 308, fonte: 12 },
+  },
+} as const;
+
+/** Desenha a etiqueta (modelo A) no tamanho escolhido, só preto e branco. */
+export async function desenharEtiqueta(e: EtiquetaEmitida, origem: string, tamanho: TamanhoEtiqueta = "60x50"): Promise<HTMLCanvasElement> {
+  const L = LAYOUT[tamanho];
   const c = document.createElement("canvas");
   c.width = LARGURA_PONTOS;
-  c.height = ALTURA_PONTOS;
+  c.height = TAMANHOS[tamanho].altura;
   const ctx = c.getContext("2d");
   if (!ctx) throw new Error("Não foi possível desenhar a etiqueta neste aparelho.");
   const f = camposEtiqueta(e);
@@ -84,42 +100,42 @@ export async function desenharEtiqueta(e: EtiquetaEmitida, origem: string): Prom
 
   // Cabeçalho: logo + nome do produto
   const logo = await carregarLogo();
-  if (logo) ctx.drawImage(logo, M, 12, 74, 74);
-  const xNome = M + 86;
+  if (logo) ctx.drawImage(logo, M, L.logo.y, L.logo.tam, L.logo.tam);
+  const xNome = M + L.nomeX;
   const largNome = LARGURA_PONTOS - xNome - M;
-  const { linhas, tamanho } = nomeEmLinhas(ctx, f.nome, largNome, 30);
-  ctx.font = `900 ${tamanho}px ${FONTE}`;
-  let y = 12 + tamanho;
+  const { linhas, tamanho: tNome } = nomeEmLinhas(ctx, f.nome, largNome, L.nomeFonte);
+  ctx.font = `900 ${tNome}px ${FONTE}`;
+  let y = L.logo.y + tNome;
   for (const l of linhas) {
     ctx.fillText(l, xNome, y);
-    y += tamanho + 2;
+    y += tNome + 2;
   }
   // Linha de baixo do cabeçalho: [ABERTO] + empresa · setor
-  const ySub = Math.min(Math.max(y + 4, 72), 88);
+  const ySub = Math.min(Math.max(y + 4, L.sub.min), L.sub.max);
   let xSub = xNome;
   if (f.tag) {
-    ctx.font = `900 14px ${FONTE}`;
+    ctx.font = `900 ${L.sub.fonte}px ${FONTE}`;
     const w = ctx.measureText(f.tag).width + 12;
-    ctx.fillRect(xSub, ySub - 15, w, 20);
+    ctx.fillRect(xSub, ySub - L.sub.fonte - 1, w, L.sub.fonte + 6);
     ctx.fillStyle = "#fff";
     ctx.fillText(f.tag, xSub + 6, ySub);
     ctx.fillStyle = "#000";
     xSub += w + 8;
   }
-  textoAjustado(ctx, f.subtitulo, xSub, ySub, LARGURA_PONTOS - xSub - M, 700, 14, 9);
+  textoAjustado(ctx, f.subtitulo, xSub, ySub, LARGURA_PONTOS - xSub - M, 700, L.sub.fonte, 9);
 
   // Linha divisória
-  ctx.fillRect(M, 94, LARGURA_PONTOS - 2 * M, 4);
+  ctx.fillRect(M, L.divisoria, LARGURA_PONTOS - 2 * M, 4);
 
   // Campos
-  const tamQr = 86;
+  const tamQr = L.qr.tam;
   const xQr = LARGURA_PONTOS - M - tamQr;
-  const xValor = M + 142;
-  let yl = 126;
-  const passo = f.linhas.length > 5 ? 26 : 29;
+  const xValor = M + L.valorX;
+  let yl = L.campos.y;
+  const passo = f.linhas.length > 5 ? L.campos.passoApertado : L.campos.passo;
   for (const linha of f.linhas) {
-    textoAjustado(ctx, linha.rotulo, M, yl, 136, 500, 19);
-    textoAjustado(ctx, linha.valor, xValor, yl, xQr - xValor - 8, 800, 19);
+    textoAjustado(ctx, linha.rotulo, M, yl, L.rotuloLarg, 500, L.campos.fonte);
+    textoAjustado(ctx, linha.valor, xValor, yl, xQr - xValor - 8, 800, L.campos.fonte);
     yl += passo;
   }
 
@@ -131,7 +147,7 @@ export async function desenharEtiqueta(e: EtiquetaEmitida, origem: string): Prom
     const desloc = Math.floor((tamQr - modulo * n) / 2);
     for (let r = 0; r < n; r++) {
       for (let col = 0; col < n; col++) {
-        if (qr.modules.get(r, col)) ctx.fillRect(xQr + desloc + col * modulo, 106 + desloc + r * modulo, modulo, modulo);
+        if (qr.modules.get(r, col)) ctx.fillRect(xQr + desloc + col * modulo, L.qr.y + desloc + r * modulo, modulo, modulo);
       }
     }
   } catch {
@@ -139,21 +155,21 @@ export async function desenharEtiqueta(e: EtiquetaEmitida, origem: string): Prom
   }
 
   // Faixa VENCE
-  const yFaixa = 296;
-  ctx.fillRect(0, yFaixa, LARGURA_PONTOS, 58);
+  const yFaixa = L.faixa.y;
+  ctx.fillRect(0, yFaixa, LARGURA_PONTOS, L.faixa.alt);
   ctx.fillStyle = "#fff";
-  ctx.font = `800 18px ${FONTE}`;
-  ctx.fillText("VENCE", M, yFaixa + 36);
-  textoAjustado(ctx, f.venceDia, LARGURA_PONTOS / 2 + 10, yFaixa + 43, 270, 900, 38, 20, "center");
-  ctx.font = `800 18px ${FONTE}`;
+  ctx.font = `800 ${L.faixa.texto}px ${FONTE}`;
+  ctx.fillText("VENCE", M, yFaixa + L.faixa.textoY);
+  textoAjustado(ctx, f.venceDia, LARGURA_PONTOS / 2 + 10, yFaixa + L.faixa.diaY, 270, 900, L.faixa.dia, 18, "center");
+  ctx.font = `800 ${L.faixa.texto}px ${FONTE}`;
   ctx.textAlign = "right";
-  ctx.fillText(f.venceHora, LARGURA_PONTOS - M, yFaixa + 36);
+  ctx.fillText(f.venceHora, LARGURA_PONTOS - M, yFaixa + L.faixa.textoY);
   ctx.textAlign = "left";
   ctx.fillStyle = "#000";
 
   // Rodapé
-  textoAjustado(ctx, f.lote, M, 386, 200, 700, 15);
-  textoAjustado(ctx, f.cnpj, LARGURA_PONTOS - M, 386, 240, 700, 15, 10, "right");
+  textoAjustado(ctx, f.lote, M, L.rodape.y, 200, 700, L.rodape.fonte, 9);
+  textoAjustado(ctx, f.cnpj, LARGURA_PONTOS - M, L.rodape.y, 240, 700, L.rodape.fonte, 9, "right");
 
   // Preto e branco puro (térmica não imprime cinza)
   const img = ctx.getImageData(0, 0, c.width, c.height);
@@ -195,6 +211,31 @@ export function salvarModo(m: ModoImpressao) {
   }
 }
 
+const CHAVE_TAMANHO = "prod_etiqueta_tamanho";
+
+export const OPCOES_TAMANHO: { valor: TamanhoEtiqueta; rotulo: string }[] = [
+  { valor: "60x50", rotulo: "60 x 50 mm" },
+  { valor: "60x40", rotulo: "60 x 40 mm" },
+];
+
+export function lerTamanho(): TamanhoEtiqueta {
+  try {
+    const v = localStorage.getItem(CHAVE_TAMANHO);
+    if (v === "60x50" || v === "60x40") return v;
+  } catch {
+    // sem armazenamento: usa o padrão
+  }
+  return "60x50";
+}
+
+export function salvarTamanho(t: TamanhoEtiqueta) {
+  try {
+    localStorage.setItem(CHAVE_TAMANHO, t);
+  } catch {
+    // ignora
+  }
+}
+
 export interface ItemImpressao {
   etiqueta: EtiquetaEmitida;
   copias: number;
@@ -217,12 +258,14 @@ const LIMITE_ENVIO = 420_000;
 export async function imprimirVarias(lista: ItemImpressao[], modo: ModoImpressao): Promise<ResultadoImpressao> {
   if (lista.length === 0) return { previas: [], restantes: [] };
   const origem = window.location.origin;
+  const tamanho = lerTamanho();
+  const T = TAMANHOS[tamanho];
   const canvases: HTMLCanvasElement[] = [];
-  for (const item of lista) canvases.push(await desenharEtiqueta(item.etiqueta, origem));
+  for (const item of lista) canvases.push(await desenharEtiqueta(item.etiqueta, origem, tamanho));
   const previas = canvases.map((c) => c.toDataURL("image/png"));
 
   if (modo === "navegador") {
-    imprimirPeloNavegador(previas.map((png, i) => ({ png, copias: lista[i]!.copias })));
+    imprimirPeloNavegador(previas.map((png, i) => ({ png, copias: lista[i]!.copias })), T.larguraMm, T.alturaMm);
     return { previas, restantes: [] };
   }
 
@@ -233,7 +276,7 @@ export async function imprimirVarias(lista: ItemImpressao[], modo: ModoImpressao
       copias: lista[i]!.copias,
     }));
     envios = dividirEnvios(imagens, (im) => im.jpeg.length + 600, LIMITE_ENVIO).map(
-      (parte) => `rawbt:data:application/pdf;base64,${paraBase64(pdfVarias(parte, LARGURA_PONTOS, ALTURA_PONTOS))}`,
+      (parte) => `rawbt:data:application/pdf;base64,${paraBase64(pdfVarias(parte, T.largura, T.altura, T.larguraMm, T.alturaMm))}`,
     );
   } else {
     const bitmaps = canvases.map((c, i) => {
@@ -242,7 +285,7 @@ export async function imprimirVarias(lista: ItemImpressao[], modo: ModoImpressao
       return { mono: bitmap1Bit(ctx.getImageData(0, 0, c.width, c.height).data, c.width, c.height), copias: lista[i]!.copias };
     });
     envios = dividirEnvios(bitmaps, (b) => b.mono.length + 60, LIMITE_ENVIO).map(
-      (parte) => `rawbt:base64,${paraBase64(tsplVarias(parte, LARGURA_PONTOS, ALTURA_PONTOS))}`,
+      (parte) => `rawbt:base64,${paraBase64(tsplVarias(parte, T.largura, T.altura, T.larguraMm, T.alturaMm))}`,
     );
   }
   const [primeiro, ...restantes] = envios;
@@ -261,9 +304,14 @@ export async function imprimirEtiqueta(e: EtiquetaEmitida, copias: number, modo:
   return r.previas[0] ?? "";
 }
 
-function imprimirPeloNavegador(lista: { png: string; copias: number }[]) {
+function imprimirPeloNavegador(lista: { png: string; copias: number }[], larguraMm: number, alturaMm: number) {
   const id = "area-impressao-etiquetas";
   document.getElementById(id)?.remove();
+  document.getElementById(`${id}-estilo`)?.remove();
+  const estilo = document.createElement("style");
+  estilo.id = `${id}-estilo`;
+  estilo.textContent = `@media print { @page { size: ${larguraMm}mm ${alturaMm}mm; margin: 0; } .so-impressao img { width: ${larguraMm}mm !important; height: ${alturaMm}mm !important; } }`;
+  document.head.appendChild(estilo);
   const area = document.createElement("div");
   area.id = id;
   area.className = "so-impressao";

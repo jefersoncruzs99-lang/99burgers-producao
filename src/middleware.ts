@@ -29,7 +29,9 @@ export async function middleware(request: NextRequest) {
   if (!user && request.nextUrl.pathname.startsWith("/admin")) {
     const destino = request.nextUrl.clone();
     destino.pathname = "/login";
+    destino.search = "";
     destino.searchParams.set("expirada", "1");
+    destino.searchParams.set("proximo", request.nextUrl.pathname);
     return NextResponse.redirect(destino);
   }
 

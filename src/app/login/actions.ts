@@ -14,7 +14,8 @@ export async function entrar(_: EstadoLogin, fd: FormData): Promise<EstadoLogin>
   const supabase = await criarSupabaseServidor();
   const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
   if (error) return { erro: "E-mail ou senha incorretos." };
-  redirect("/admin");
+  const proximo = texto(fd, "proximo");
+  redirect(/^\/admin(\/[a-z0-9/-]*)?$/i.test(proximo) ? proximo : "/admin");
 }
 
 export async function recuperarSenha(_: EstadoLogin, fd: FormData): Promise<EstadoLogin> {

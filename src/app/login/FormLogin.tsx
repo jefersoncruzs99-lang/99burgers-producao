@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { entrar, recuperarSenha, type EstadoLogin } from "./actions";
 
-export function FormLogin() {
+export function FormLogin({ proximo }: { proximo?: string } = {}) {
   const [modo, setModo] = useState<"entrar" | "recuperar">("entrar");
   const [estadoEntrar, acaoEntrar, entrando] = useActionState<EstadoLogin, FormData>(entrar, {});
   const [estadoRec, acaoRec, enviando] = useActionState<EstadoLogin, FormData>(recuperarSenha, {});
@@ -30,6 +30,7 @@ export function FormLogin() {
 
   return (
     <form action={acaoEntrar} className="cartao pilha">
+      {proximo && <input type="hidden" name="proximo" value={proximo} />}
       <div className="campo">
         <label htmlFor="email">E-mail</label>
         <input id="email" name="email" type="email" autoComplete="email" required />
